@@ -4,8 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calbox — Production Scheduler · Live</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>window.XLSX || document.write('<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"><\/script>');</script>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script>window.msal || document.write('<script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"><\/script>');</script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; color: #1a1a18; min-height: 100vh; }
@@ -293,7 +295,7 @@ let currentFilter = 'all';
 async function initAuth() {
   try {
     if (typeof msal === 'undefined') {
-      throw new Error('MSAL library failed to load. Check your internet connection and refresh.');
+      throw new Error('MSAL library failed to load from CDN. This can happen on a corporate network or with strict ad-blockers. Try (1) a different network, (2) disabling ad-blocker for this page, or (3) refreshing.');
     }
     msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
     await msalInstance.initialize();
