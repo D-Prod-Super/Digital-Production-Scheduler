@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calbox — Production Scheduler · Live</title>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 if (typeof XLSX === 'undefined') {
@@ -106,7 +107,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
 .gantt-body { display: grid; grid-template-columns: 140px 1fr; }
 .work-center-col { border-right: 0.5px solid #e0dfd8; background: #fafaf8; }
-.wc-row { padding: 14px 14px; border-bottom: 0.5px solid #e0dfd8; display: flex; flex-direction: column; justify-content: center; gap: 3px; height: 64px; }
+.wc-row { padding: 14px 14px; border-bottom: 0.5px solid #e0dfd8; display: flex; flex-direction: column; justify-content: center; gap: 3px; height: 84px; }
 .wc-row:last-child { border-bottom: none; }
 .wc-name { font-size: 13px; font-weight: 700; color: #1a1a18; letter-spacing: -0.01em; }
 .wc-meta { font-size: 9px; color: #888780; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
@@ -114,13 +115,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .wc-row.bottleneck::before { content: ''; }
 
 .timeline-col { position: relative; }
-.timeline-row { position: relative; height: 64px; border-bottom: 0.5px solid #e0dfd8; display: flex; }
+.timeline-row { position: relative; height: 84px; border-bottom: 0.5px solid #e0dfd8; display: flex; }
 .timeline-row:last-child { border-bottom: none; }
 .timeline-cell { flex-shrink: 0; border-right: 0.5px solid #f5f4f0; }
 .timeline-cell.shift-overlap { background: #fefcf3; }
 .timeline-cell.lunch { background: #f5f4f0; }
 
-.job-bar { position: absolute; top: 8px; height: 48px; border-radius: 7px; padding: 6px 9px; display: flex; flex-direction: column; justify-content: center; gap: 1px; cursor: pointer; transition: transform 0.12s, box-shadow 0.12s; border-left: 3px solid; overflow: hidden; }
+.job-bar { position: absolute; top: 8px; height: 68px; border-radius: 7px; padding: 6px 9px; display: flex; flex-direction: column; justify-content: center; gap: 1px; cursor: pointer; transition: transform 0.12s, box-shadow 0.12s; border-left: 3px solid; overflow: hidden; }
 .job-bar:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 5; }
 .job-bar.rush { box-shadow: 0 0 0 1.5px #c0392b inset; }
 .job-bar.rush::after { content: '🚩'; position: absolute; top: 2px; right: 4px; font-size: 9px; }
@@ -159,45 +160,43 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .toast.show { opacity: 1; }
 .toast.error { background: #c0392b; }
 
+/* ─── Override table ─── */
+.override-wrap { padding: 0 1.5rem 1rem; }
+.override-panel { background: #fff; border: 0.5px solid #e0dfd8; border-radius: 11px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+.override-header { padding: 12px 16px; border-bottom: 0.5px solid #e0dfd8; background: #fafaf8; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; user-select: none; }
+.override-header:hover { background: #f0efe9; }
+.override-chevron { font-size: 10px; color: #888780; transition: transform 0.2s; display: inline-block; width: 14px; }
+.override-header-left { display: flex; align-items: center; gap: 10px; }
+.override-title { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: #888780; text-transform: uppercase; }
+.override-badge { font-size: 10px; background: #fef3c7; color: #92400e; border: 0.5px solid #fde68a; border-radius: 4px; padding: 2px 8px; font-weight: 600; }
+.override-actions { display: flex; gap: 6px; }
+.override-apply { background: #1a1a18; color: #fff; border: none; border-radius: 6px; padding: 6px 14px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.override-apply:hover { background: #333330; }
+.override-clear { background: transparent; color: #888780; border: 0.5px solid #e0dfd8; border-radius: 6px; padding: 6px 12px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.override-clear:hover { color: #c0392b; border-color: #c0392b; }
+.override-table { width: 100%; border-collapse: collapse; }
+.override-table th { padding: 8px 12px; text-align: left; font-size: 10px; font-weight: 700; color: #888780; text-transform: uppercase; letter-spacing: 0.06em; background: #fafaf8; border-bottom: 0.5px solid #e0dfd8; white-space: nowrap; }
+.override-table td { padding: 7px 12px; border-bottom: 0.5px solid #f0efe9; font-size: 12px; vertical-align: middle; }
+.override-table tr:last-child td { border-bottom: none; }
+.override-table tr:hover td { background: #fafaf8; }
+.override-table tr.has-override td { background: #fffbeb; }
+.override-table tr.has-override td:first-child { border-left: 3px solid #f59e0b; }
+.ov-order { font-weight: 700; color: #1a1a18; }
+.ov-company { color: #555553; }
+.ov-msf { color: #0c3060; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ov-auto { font-size: 11px; color: #888780; font-variant-numeric: tabular-nums; }
+.ov-input { width: 130px; height: 28px; border: 0.5px solid #d0d0ca; border-radius: 5px; padding: 0 8px; font-size: 11px; font-family: inherit; color: #1a1a18; background: #fff; outline: none; }
+.ov-input:focus { border-color: #0078d4; box-shadow: 0 0 0 2px rgba(0,120,212,0.12); }
+.ov-input.overridden { border-color: #f59e0b; background: #fffbeb; }
+.ov-clear-row { background: transparent; border: none; color: #ccc; cursor: pointer; font-size: 14px; padding: 2px 4px; border-radius: 4px; line-height: 1; }
+.ov-clear-row:hover { color: #c0392b; background: #fdf0ee; }
+
 /* ─── Footer ─── */
 .footer { padding: 16px 24px; text-align: center; font-size: 10px; color: #b8b7b0; letter-spacing: 0.06em; text-transform: uppercase; border-top: 0.5px solid #e0dfd8; background: #fff; }
 
 @media (max-width: 1100px) {
   .panels { grid-template-columns: 1fr; }
 }
-
-/* ─── Kanban board (from Order Workflow dashboard) ─── */
-.board { display: flex; gap: 10px; padding: 1.25rem 1.5rem 2rem; overflow-x: auto; align-items: flex-start; }
-.col { min-width: 210px; flex: 0 0 210px; display: flex; flex-direction: column; }
-.col-header { border-radius: 9px; padding: 8px 11px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-.col-title { font-size: 11px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; line-height: 1.3; }
-.col-count { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; flex-shrink: 0; }
-.col-value { font-size: 11px; font-weight: 600; color: #888; margin: 0 2px 8px; }
-.cards-list { display: flex; flex-direction: column; gap: 7px; flex: 1; min-height: 80px; border-radius: 10px; padding: 3px; }
-.card { background: #fff; border: 0.5px solid #e0dfd8; border-radius: 11px; overflow: hidden; }
-.card:hover { border-color: #bbb; box-shadow: 0 2px 10px rgba(0,0,0,0.09); }
-.card-header { background: #f5f4f0; border-bottom: 0.5px solid #e8e7e2; padding: 7px 12px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-.card-order-label { font-size: 9px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 1px; }
-.card-order-num { font-size: 14px; font-weight: 700; color: #1a1a18; letter-spacing: -0.02em; }
-.rush-badge { font-size: 13px; flex-shrink: 0; }
-.card-body { padding: 9px 12px 10px; }
-.card-company { font-size: 12px; font-weight: 600; color: #1a1a18; margin-bottom: 2px; line-height: 1.3; }
-.card-product { font-size: 11px; color: #666663; margin-bottom: 8px; line-height: 1.4; }
-.card-size { color: #aaa; font-size: 10px; }
-.card-meta { display: flex; gap: 5px; flex-wrap: wrap; }
-.tag { font-size: 10px; padding: 2px 7px; border-radius: 999px; white-space: nowrap; font-weight: 500; }
-.tag-blue   { background: #ddeeff; color: #0a4080; }
-.tag-gray   { background: #efefeb; color: #555553; }
-.tag-green  { background: #e4f5d4; color: #2a5e10; }
-.tag-orange { background: #fff0e0; color: #8a4a00; }
-.card-footer { padding: 7px 12px 9px; border-top: 0.5px solid #f0efe9; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-.card-value { font-size: 11px; font-weight: 700; color: #1a1a18; }
-.card-due { font-size: 10px; font-weight: 600; }
-.due-ok   { color: #2d8a4e; }
-.due-warn { color: #b87a00; }
-.due-late { color: #c0392b; }
-.due-none { color: #bbb; }
-.empty-col { background: #f9f8f5; border: 0.5px dashed #ddd; border-radius: 10px; padding: 20px 8px; text-align: center; font-size: 11px; color: #bbb; min-height: 70px; display: flex; align-items: center; justify-content: center; }
 
 /* ─── Print queue panel ─── */
 .print-queue-row { display: grid; grid-template-columns: 28px 70px 1fr 80px 120px 80px; gap: 10px; padding: 9px 16px; align-items: center; font-size: 12px; border-bottom: 0.5px solid #f0efe9; transition: background 0.12s; }
@@ -272,9 +271,41 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <div class="gantt-wrap">
     <div class="gantt" id="gantt"></div>
   </div>
-  <!-- Kanban: all statuses as separate columns -->
-  <div id="kanban-board" class="board"></div>
 
+  <!-- Override table (collapsible) -->
+  <div class="override-wrap">
+    <div class="override-panel">
+      <div class="override-header" onclick="toggleOverrides()" style="cursor:pointer;">
+        <div class="override-header-left">
+          <span class="override-chevron" id="override-chevron">▶</span>
+          <span class="override-title">Manual Time Overrides</span>
+          <span class="override-badge" id="override-count" style="display:none;">0 overrides active</span>
+        </div>
+        <div class="override-actions" onclick="event.stopPropagation()">
+          <button class="override-clear" onclick="clearAllOverrides()">Clear All</button>
+          <button class="override-apply" onclick="applyOverrides()">▶ Apply &amp; Re-render</button>
+        </div>
+      </div>
+      <div id="override-body" style="display:none;">
+        <table class="override-table">
+        <thead>
+          <tr>
+            <th style="width:80px;">Order</th>
+            <th>Company</th>
+            <th>Product</th>
+            <th style="width:70px;">MSF</th>
+            <th style="width:145px;">Auto Print Start</th>
+            <th style="width:145px;">Auto Print End</th>
+            <th style="width:145px;">Override Start</th>
+            <th style="width:145px;">Override End</th>
+            <th style="width:32px;"></th>
+          </tr>
+        </thead>
+        <tbody id="override-tbody"></tbody>
+      </table>
+      </div><!-- /override-body -->
+    </div>
+  </div>
   <!-- Bottom panels: stage distribution + print queue -->
   <div class="panels">
     <div class="panel">
@@ -297,7 +328,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
 <script>
 // ─────────────────────────────────────────────────────────────
-// CONFIG — copied verbatim from existing app
+// CONFIG
 // ─────────────────────────────────────────────────────────────
 const MSAL_CONFIG = {
   auth: {
@@ -331,12 +362,11 @@ const SHIFT_BLOCKS = [
 const PALETTE = ['#FBB6CE','#FED7A8','#FEF3C7','#BBF7D0','#BFDBFE','#DDD6FE','#FECACA','#FDE68A','#A7F3D0','#C7D2FE','#F9A8D4','#FCD34D','#BEF264','#67E8F9'];
 
 const WORK_CENTERS = [
-  { id: 'prepress',  name: 'Prepress',  meta: 'Office · Parallel',     bottleneck: false },
-  { id: 'print',     name: 'Print',     meta: 'Bottleneck · 10K MSF/d', bottleneck: true  },
-  { id: 'cut',       name: 'Cut',       meta: 'Bottleneck · 14K MSF/d', bottleneck: true  },
-  { id: 'finishing', name: 'Finishing', meta: 'Stripping · Gluing',     bottleneck: false },
-  { id: 'pack',      name: 'Pack',      meta: 'Palletizing',            bottleneck: false },
-  { id: 'ship',      name: 'Ship',      meta: 'CB2 · Outbound',         bottleneck: false },
+  { id: 'queue_print',  name: 'In Queue for Printing', meta: 'Waiting for press',         bottleneck: false, queueFor: null },
+  { id: 'print',        name: 'Printing',              meta: 'Bottleneck · 10K MSF/day', bottleneck: true,  queueFor: null },
+  { id: 'queue_cut',    name: 'In Queue for Cutting',  meta: 'Waiting for cutter',        bottleneck: false, queueFor: null },
+  { id: 'cut',          name: 'Cutting',               meta: 'Bottleneck · 14K MSF/day', bottleneck: true,  queueFor: null },
+  { id: 'finishing',    name: 'Finishing',             meta: 'Stripping · Gluing',        bottleneck: false, queueFor: null },
 ];
 
 const ACTIVE_STATUSES = new Set([
@@ -353,7 +383,7 @@ let currentView = 'hours';
 let currentFilter = 'all';
 
 // ─────────────────────────────────────────────────────────────
-// AUTH (copied from existing app)
+// AUTH
 // ─────────────────────────────────────────────────────────────
 async function initAuth() {
   try {
@@ -377,10 +407,7 @@ async function initAuth() {
   } catch (err) {
     console.error('Auth init failed:', err);
     const errBox = document.getElementById('signin-error');
-    if (errBox) {
-      errBox.textContent = 'Initialization error: ' + (err.message || err);
-      errBox.style.display = 'block';
-    }
+    if (errBox) { errBox.textContent = 'Initialization error: ' + (err.message || err); errBox.style.display = 'block'; }
   }
 }
 
@@ -433,7 +460,7 @@ function onSignedIn() {
 }
 
 // ─────────────────────────────────────────────────────────────
-// FETCH FROM ONEDRIVE (copied from existing app)
+// FETCH FROM ONEDRIVE
 // ─────────────────────────────────────────────────────────────
 function encodeShareUrl(url) {
   const b64 = btoa(unescape(encodeURIComponent(url)));
@@ -444,11 +471,9 @@ async function loadFromOneDrive() {
   setLoading(true, 'Connecting to OneDrive...');
   const refreshIcon = document.getElementById('refresh-icon');
   if (refreshIcon) refreshIcon.classList.add('spin');
-
   try {
     const token = await getAccessToken();
     const shareId = encodeShareUrl(SHARE_URL);
-
     setLoading(true, 'Downloading Excel file...');
     const resp = await fetch(`https://graph.microsoft.com/v1.0/shares/${shareId}/driveItem/content`, {
       headers: { Authorization: 'Bearer ' + token }
@@ -457,16 +482,13 @@ async function loadFromOneDrive() {
       const errText = await resp.text();
       throw new Error(`OneDrive returned ${resp.status}: ${errText.slice(0,200)}`);
     }
-
     setLoading(true, 'Parsing orders...');
     const buffer = await resp.arrayBuffer();
     orders = parseExcel(buffer);
-
     if (!orders.length) throw new Error('No order rows found in the Excel file.');
-
     setLoading(true, 'Computing schedule...');
     scheduledJobs = computeSchedule(orders);
-
+    overrides = {};
     setLoading(false);
     document.getElementById('summary-bar').style.display = 'flex';
     document.getElementById('controls-bar').style.display = 'flex';
@@ -500,7 +522,7 @@ function setLoading(isLoading, msg) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// EXCEL PARSING (adapted to grab fields scheduler needs)
+// EXCEL PARSING
 // ─────────────────────────────────────────────────────────────
 function parseExcel(arrayBuf) {
   const wb = XLSX.read(new Uint8Array(arrayBuf), { type: 'array', cellDates: true });
@@ -642,13 +664,166 @@ function computeSchedule(allOrders) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// RENDER
+// MANUAL OVERRIDES
+// overrides = { [orderId]: { printStart: Date|null, printEnd: Date|null } }
 // ─────────────────────────────────────────────────────────────
+let overrides = {};
+
+function toggleOverrides() {
+  const body = document.getElementById('override-body');
+  const chevron = document.getElementById('override-chevron');
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  chevron.style.transform = isOpen ? '' : 'rotate(90deg)';
+}
+
+
+function fmtForInput(date) {
+  // Format a Date as "YYYY-MM-DDTHH:MM" for datetime-local inputs
+  if (!date) return '';
+  const pad = n => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function parseInputDate(str) {
+  if (!str || !str.trim()) return null;
+  const d = new Date(str);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function renderOverrideTable() {
+  const tbody = document.getElementById('override-tbody');
+  const fmt = d => d ? d.toLocaleString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit', hour12:false }) : '—';
+
+  tbody.innerHTML = scheduledJobs.map(job => {
+    const ov = overrides[job.id] || {};
+    const hasOverride = ov.printStart || ov.printEnd;
+    const rowCls = hasOverride ? 'has-override' : '';
+    const startVal = ov.printStart ? fmtForInput(ov.printStart) : '';
+    const endVal   = ov.printEnd   ? fmtForInput(ov.printEnd)   : '';
+    return `<tr class="${rowCls}" id="ov-row-${job.id}">
+      <td class="ov-order">#${job.id}</td>
+      <td class="ov-company">${job.company || '—'}</td>
+      <td style="color:#555553; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${job.product || '—'}</td>
+      <td class="ov-msf">${fmtMSF(job.msf)}</td>
+      <td class="ov-auto">${fmt(job.printStart)}</td>
+      <td class="ov-auto">${fmt(job.printEnd)}</td>
+      <td><input class="ov-input ${startVal ? 'overridden' : ''}" type="datetime-local"
+          id="ov-start-${job.id}" value="${startVal}"
+          onchange="markOverride('${job.id}')"
+          title="Leave blank to use auto-computed time"></td>
+      <td><input class="ov-input ${endVal ? 'overridden' : ''}" type="datetime-local"
+          id="ov-end-${job.id}" value="${endVal}"
+          onchange="markOverride('${job.id}')"
+          title="Leave blank to use auto-computed time"></td>
+      <td><button class="ov-clear-row" onclick="clearRowOverride('${job.id}')" title="Clear overrides for this order">×</button></td>
+    </tr>`;
+  }).join('');
+
+  updateOverrideBadge();
+}
+
+function markOverride(id) {
+  const startEl = document.getElementById(`ov-start-${id}`);
+  const endEl   = document.getElementById(`ov-end-${id}`);
+  const ps = parseInputDate(startEl.value);
+  const pe = parseInputDate(endEl.value);
+  overrides[id] = { printStart: ps, printEnd: pe };
+  startEl.classList.toggle('overridden', !!ps);
+  endEl.classList.toggle('overridden', !!pe);
+  const row = document.getElementById(`ov-row-${id}`);
+  row.classList.toggle('has-override', !!(ps || pe));
+  updateOverrideBadge();
+}
+
+function clearRowOverride(id) {
+  delete overrides[id];
+  const startEl = document.getElementById(`ov-start-${id}`);
+  const endEl   = document.getElementById(`ov-end-${id}`);
+  if (startEl) { startEl.value = ''; startEl.classList.remove('overridden'); }
+  if (endEl)   { endEl.value = '';   endEl.classList.remove('overridden'); }
+  const row = document.getElementById(`ov-row-${id}`);
+  if (row) row.classList.remove('has-override');
+  updateOverrideBadge();
+}
+
+function clearAllOverrides() {
+  overrides = {};
+  renderOverrideTable();
+  applyOverrides();
+}
+
+function updateOverrideBadge() {
+  const count = Object.values(overrides).filter(ov => ov.printStart || ov.printEnd).length;
+  const badge = document.getElementById('override-count');
+  badge.style.display = count > 0 ? 'inline' : 'none';
+  badge.textContent = `${count} override${count !== 1 ? 's' : ''} active`;
+}
+
+function applyOverrides() {
+  // Re-run the scheduler but lock in any overridden Print Start/End,
+  // then cascade Cut times and downstream jobs around the locked slots.
+  const active = orders.filter(o =>
+    ACTIVE_STATUSES.has(o.status) && o.msf != null && o.msf > 0
+  ).sort((a, b) => {
+    if (a.rush !== b.rush) return a.rush ? -1 : 1;
+    const ad = a.due ? a.due.getTime() : Infinity;
+    const bd = b.due ? b.due.getTime() : Infinity;
+    return ad - bd;
+  });
+
+  const start = snapToNextProductive(new Date());
+  let printEndPrev = start;
+  let cutEndPrev   = start;
+  const result = [];
+
+  for (const o of active) {
+    const ov = overrides[o.id] || {};
+    const printHrs = o.msf / PRINT_RATE;
+    const cutHrs   = o.msf / CUT_RATE;
+
+    // Print window — use override if set, otherwise auto-schedule after previous
+    let printStart, printEnd;
+    if (ov.printStart && ov.printEnd) {
+      printStart = ov.printStart;
+      printEnd   = ov.printEnd;
+    } else if (ov.printStart) {
+      printStart = ov.printStart;
+      printEnd   = addProductiveHours(printStart, printHrs);
+    } else if (ov.printEnd) {
+      printEnd   = ov.printEnd;
+      printStart = snapToNextProductive(printEndPrev);
+    } else {
+      printStart = snapToNextProductive(printEndPrev);
+      printEnd   = addProductiveHours(printStart, printHrs);
+    }
+
+    // Cut window — always starts after print ends AND after previous cut ends
+    const cutEarliest = printEnd > cutEndPrev ? printEnd : cutEndPrev;
+    const cutStart    = snapToNextProductive(cutEarliest);
+    const cutEnd      = addProductiveHours(cutStart, cutHrs);
+
+    printEndPrev = printEnd;
+    cutEndPrev   = cutEnd;
+
+    const onTime = o.due ? cutEnd <= new Date(o.due.getFullYear(), o.due.getMonth(), o.due.getDate(), 23, 59) : true;
+    result.push({ ...o, printHrs, cutHrs, printStart, printEnd, cutStart, cutEnd, onTime });
+  }
+
+  scheduledJobs = result;
+  renderGantt();
+  renderKPIs();
+  renderSidePanels();
+  renderOverrideTable();
+  showToast(`Schedule updated · ${Object.keys(overrides).filter(id => overrides[id].printStart || overrides[id].printEnd).length} override(s) active`);
+}
+
+
 function renderAll() {
   renderKPIs();
   renderGantt();
-  renderKanban();
   renderSidePanels();
+  renderOverrideTable();
   renderFooter();
 }
 
@@ -759,6 +934,25 @@ function renderGantt() {
       else if (h >= 15 && h < 17) cls += ' shift-overlap';
       html += `<div class="${cls}" style="width:${pixelsPerSlot}px;"></div>`;
     }
+    // Queue rows: show order chips as small labeled blocks at fixed positions
+    if (wc.id === 'queue_print' || wc.id === 'queue_cut') {
+      const qStatus = wc.id === 'queue_print' ? 'In Queue for Printing' : 'In Queue for Cutting';
+      const qJobs = orders.filter(o => o.status === qStatus);
+      // Place chips left-to-right starting from slot 0, each 2 slots wide
+      qJobs.forEach((job, idx) => {
+        const left = idx * (pixelsPerSlot * 2 + 4);
+        const width = pixelsPerSlot * 2;
+        const color = PALETTE[orders.findIndex(o => o.id === job.id) % PALETTE.length];
+        const rushCls = job.rush ? ' rush' : '';
+        html += `<div class="job-bar${rushCls}" style="left:${left}px; width:${width}px; background:${color}; border-left-color:${darken(color,0.55)}; top:10px; height:64px;">`;
+        html += `<div class="job-bar-label">#${job.id}${job.rush ? ' 🚩' : ''}</div>`;
+        if (job.company) html += `<div class="job-bar-meta">${job.company}</div>`;
+        if (job.product) html += `<div class="job-bar-meta">${job.product}</div>`;
+        if (job.msf)     html += `<div class="job-bar-meta">${fmtMSF(job.msf)} MSF</div>`;
+        html += '</div>';
+      });
+    }
+    // Scheduled bars: Print and Cut bottleneck rows
     if (wc.id === 'print' || wc.id === 'cut') {
       jobs.forEach((job, idx) => {
         const jobStart = wc.id === 'print' ? job.printStart : job.cutStart;
@@ -780,12 +974,16 @@ function renderGantt() {
         if (startSlot === -1) return;
         const left = startSlot * pixelsPerSlot + startFrac * pixelsPerSlot;
         const width = Math.max((endSlot - startSlot) * pixelsPerSlot + (endFrac - startFrac) * pixelsPerSlot, 24);
-        const showLabel = width > 50;
-        const showMeta = width > 90;
+        const showLabel  = width > 40;
+        const showMeta1  = width > 90;
+        const showMeta2  = width > 150;
+        const showMeta3  = width > 210;
         const rushCls = job.rush ? ' rush' : '';
         html += `<div class="job-bar${rushCls}" data-job="${idx}" style="left:${left}px; width:${width}px; background:${color}; border-left-color:${darken(color, 0.55)};">`;
-        if (showLabel) html += `<div class="job-bar-label">JOB ${job.id}</div>`;
-        if (showMeta) html += `<div class="job-bar-meta">${fmtMSF(job.msf)} MSF</div>`;
+        if (showLabel) html += `<div class="job-bar-label">#${job.id}</div>`;
+        if (showMeta1) html += `<div class="job-bar-meta">${job.company || '—'}</div>`;
+        if (showMeta2) html += `<div class="job-bar-meta">${job.product || '—'}</div>`;
+        if (showMeta3) html += `<div class="job-bar-meta">${fmtMSF(job.msf)} MSF</div>`;
         html += '</div>';
       });
     }
@@ -817,7 +1015,7 @@ function showTooltip(e, job) {
   const dueStr = job.due ? job.due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A';
   tooltip.innerHTML = `
     <div class="tooltip-header">
-      <div class="tooltip-title">JOB ${job.id}</div>
+      <div class="tooltip-title">#${job.id} · ${job.product || job.company || ''}</div>
       ${job.rush ? '<div class="tooltip-rush">RUSH</div>' : ''}
     </div>
     <div class="tooltip-row"><span class="tooltip-key">Customer</span><span class="tooltip-val">${job.company || '—'}</span></div>
@@ -867,52 +1065,7 @@ function dueInfo(due) {
   return { cls: 'due-ok', label: `Due ${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}` };
 }
 
-function cardHTML(o) {
-  const { cls, label } = dueInfo(o.due);
-  const money = o.value ? '$' + Math.round(o.value).toLocaleString() : null;
-  return `<div class="card">
-    <div class="card-header">
-      <div>
-        <div class="card-order-label">Order No.</div>
-        <div class="card-order-num">${o.id}</div>
-      </div>
-      ${o.rush ? '<span class="rush-badge" title="Rush">🚩</span>' : ''}
-    </div>
-    <div class="card-body">
-      <div class="card-company">${o.company || '—'}</div>
-      <div class="card-product">${o.product || '—'}${o.size ? ` <span class="card-size">· ${o.size}</span>` : ''}</div>
-      <div class="card-meta">
-        ${o.qty  != null ? `<span class="tag tag-blue">Qty ${o.qty.toLocaleString()}</span>` : ''}
-        ${o.msf  != null ? `<span class="tag tag-green">MSF ${o.msf}</span>` : ''}
-        ${o.rep      ? `<span class="tag tag-orange">${o.rep}</span>` : ''}
-        ${o.designer ? `<span class="tag tag-gray">${o.designer}</span>` : ''}
-      </div>
-    </div>
-    <div class="card-footer">
-      ${money ? `<span class="card-value">${money}</span>` : '<span></span>'}
-      <span class="card-due ${cls}">${label}</span>
-    </div>
-  </div>`;
-}
 
-function renderKanban() {
-  document.getElementById('kanban-board').innerHTML = ALL_STAGES.map(stage => {
-    const cards = orders.filter(o => o.status === stage.key);
-    const stageMSF = cards.reduce((s, o) => s + (o.msf || 0), 0);
-    return `<div class="col">
-      <div class="col-header" style="background:${stage.color}">
-        <span class="col-title" style="color:${stage.textColor}">${stage.key}</span>
-        <span class="col-count" style="background:${stage.countBg};color:${stage.countColor}">${cards.length}</span>
-      </div>
-      ${stageMSF > 0 ? `<div class="col-value">${stageMSF.toLocaleString(undefined,{maximumFractionDigits:1})} MSF</div>` : '<div style="margin-bottom:8px;"></div>'}
-      <div class="cards-list">
-        ${cards.length === 0
-          ? '<div class="empty-col">Empty</div>'
-          : cards.map(cardHTML).join('')}
-      </div>
-    </div>`;
-  }).join('');
-}
 
 function renderPrintQueue() {
   const fmt = d => d.toLocaleString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit', hour12: false });
@@ -961,19 +1114,17 @@ function renderSidePanels() {
     if (!o.status) continue;
     stageCounts[o.status] = (stageCounts[o.status] || 0) + 1;
   }
-  const stageOrder = ALL_STAGES.map(s => s.key);
-  const presentStages = stageOrder.filter(s => stageCounts[s]);
-  const maxCount = Math.max(...presentStages.map(s => stageCounts[s]), 1);
-  document.getElementById('stage-list').innerHTML = presentStages.map(s => {
-    const count = stageCounts[s];
+  // Always show ALL 13 stages — zero counts shown as empty bars
+  const maxCount = Math.max(...ALL_STAGES.map(s => stageCounts[s.key] || 0), 1);
+  document.getElementById('stage-list').innerHTML = ALL_STAGES.map(stage => {
+    const count = stageCounts[stage.key] || 0;
     const pct = (count / maxCount) * 100;
-    const stage = ALL_STAGES.find(st => st.key === s);
-    return `<div class="list-row">
-      <div class="list-name">${s}</div>
-      <div class="list-bar-cell"><div class="list-bar-bg"><div class="list-bar-fill" style="width:${pct}%; background:${stage ? stage.textColor : '#0c3060'};"></div></div></div>
-      <div class="list-num">${count}</div>
+    return `<div class="list-row" style="opacity:${count === 0 ? '0.4' : '1'}">
+      <div class="list-name">${stage.key}</div>
+      <div class="list-bar-cell"><div class="list-bar-bg"><div class="list-bar-fill" style="width:${pct}%; background:${stage.textColor};"></div></div></div>
+      <div class="list-num" style="color:${count === 0 ? '#ccc' : 'inherit'}">${count}</div>
     </div>`;
-  }).join('') || '<div style="padding:20px; text-align:center; color:#aaa; font-size:12px;">No stage data</div>';
+  }).join('');
 
   // Print queue
   renderPrintQueue();
