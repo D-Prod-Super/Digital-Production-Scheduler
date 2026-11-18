@@ -339,6 +339,7 @@ const MSAL_CONFIG = {
   cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false },
 };
 const SCOPES = ['Files.Read', 'User.Read'];
+const ORDERS_SHEET = 'Live Orders';   // tab the scheduler reads orders from
 const SHARE_URL = 'https://calbox-my.sharepoint.com/:x:/p/drodrigues/IQDYNMiqjj8TTKCXTm0muxJ6AbvLDuzONkwpEXBTKUrMC6Y?e=cYnC0S';
 
 // ─────────────────────────────────────────────────────────────
@@ -485,7 +486,7 @@ async function loadFromOneDrive() {
     setLoading(true, 'Parsing orders...');
     const buffer = await resp.arrayBuffer();
     orders = parseExcel(buffer);
-    if (!orders.length) throw new Error(`No order rows found. Sheet read: "${parseExcel.lastSheet}". Columns seen: ${(parseExcel.lastHeaders || []).slice(0, 15).join(', ') || 'none'}. The scheduler expects a column named "Order No."`);
+    if (!orders.length) throw new Error(parseExcel.problem || `Tab "${parseExcel.lastSheet}" was read but contains no order rows.`);
     setLoading(true, 'Computing schedule...');
     scheduledJobs = computeSchedule(orders);
     overrides = {};
@@ -526,25 +527,60 @@ function setLoading(isLoading, msg) {
 // ─────────────────────────────────────────────────────────────
 function parseExcel(arrayBuf) {
   const wb = XLSX.read(new Uint8Array(arrayBuf), { type: 'array', cellDates: true });
-  const sheetName = wb.SheetNames.includes('Orders') ? 'Orders' : wb.SheetNames[0];
-  const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: null });
-  parseExcel.lastSheet = sheetName;
+
+  // Normalise header text so "Total MSF." / "Total MSF" / " total msf " all match
+  const norm = s => String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  parseExcel.sheetNames = wb.SheetNames;
+  parseExcel.problem = null;
+
+  // Read ONLY the configured tab (case/spacing-insensitive match on the name)
+  const sheetName = wb.SheetNames.find(n => norm(n) === norm(ORDERS_SHEET));
+  if (!sheetName) {
+    parseExcel.lastSheet = ORDERS_SHEET;
+    parseExcel.lastHeaders = [];
+    parseExcel.problem = `Tab "${ORDERS_SHEET}" was not found. Tabs in the file: ${wb.SheetNames.join(', ')}.`;
+    return [];
+  }
+
+  // Header row = first row (within 25) containing "Order No."
+  const grid = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: null, blankrows: true });
+  const hdrIdx = grid.slice(0, 25).findIndex(row => row.some(c => norm(c) === 'orderno'));
+  if (hdrIdx < 0) {
+    const firstRow = (grid.find(r => r.some(c => c != null)) || []).filter(c => c != null).slice(0, 15);
+    parseExcel.lastSheet = sheetName;
+    parseExcel.lastHeaders = firstRow;
+    parseExcel.problem = `Tab "${sheetName}" has no "Order No." column in its first 25 rows. First row seen: ${firstRow.join(', ') || 'empty'}.`;
+    return [];
+  }
+  const pick = { name: sheetName, hdrIdx };
+
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[pick.name], { defval: null, range: pick.hdrIdx });
+  parseExcel.lastSheet = pick.name;
   parseExcel.lastHeaders = rows.length ? Object.keys(rows[0]) : [];
-  return rows.filter(r => r['Order No.'] != null).map(r => {
+
+  // Case/punctuation-insensitive column lookup
+  const colMap = {};
+  for (const k of parseExcel.lastHeaders) colMap[norm(k)] = k;
+  const get = (r, name) => { const k = colMap[norm(name)]; return k !== undefined ? r[k] : null; };
+
+  return rows.filter(r => get(r, 'Order No.') != null && String(get(r, 'Order No.')).trim() !== '').map(r => {
     const fmtDate = v => v instanceof Date ? v : (v ? new Date(v) : null);
-    const rush = r['Rush'];
+    const num = v => (v != null && v !== '' && !isNaN(Number(v))) ? Number(v) : null;
+    const rush = get(r, 'Rush');
+    const msf = num(get(r, 'Total MSF.')), qty = num(get(r, 'QTY')), val = num(get(r, 'Order Value $'));
     return {
-      id:       String(r['Order No.']).replace(/\.0$/,''),
-      company:  r['Company Name']        || '',
-      product:  r['Product Description'] || '',
-      size:     r['Product Size']        || '',
-      msf:      r['Total MSF.'] != null ? parseFloat(Number(r['Total MSF.']).toFixed(2)) : null,
-      qty:      r['QTY'] != null ? Math.round(Number(r['QTY'])) : null,
-      due:      fmtDate(r['Due Date']),
-      rep:      r['Sales Rep']  || '',
-      designer: r['Designer']   || '',
-      value:    r['Order Value $'] != null ? parseFloat(Number(r['Order Value $']).toFixed(2)) : null,
-      status:   r['Stages/Status'] || 'New Order',
+      id:       String(get(r, 'Order No.')).replace(/\.0$/, ''),
+      company:  get(r, 'Company Name')        || '',
+      product:  get(r, 'Product Description') || '',
+      size:     get(r, 'Product Size')        || '',
+      msf:      msf != null ? parseFloat(msf.toFixed(2)) : null,
+      qty:      qty != null ? Math.round(qty) : null,
+      due:      fmtDate(get(r, 'Due Date')),
+      rep:      get(r, 'Sales Rep')  || '',
+      designer: get(r, 'Designer')   || '',
+      value:    val != null ? parseFloat(val.toFixed(2)) : null,
+      status:   String(get(r, 'Stages/Status') || 'New Order').trim(),
       rush:     rush === '🚩' || rush === true || rush === 1 || String(rush||'').toLowerCase().match(/^(y|yes|rush|true|1)$/) != null,
     };
   });
