@@ -300,7 +300,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
             <th style="width:80px;">Order</th>
             <th>Company</th>
             <th>Product</th>
-            <th style="width:70px;">MSF</th>
+            <th style="width:90px;">Board MSF</th>
             <th style="width:145px;">Auto Print Start</th>
             <th style="width:145px;">Auto Print End</th>
             <th style="width:145px;">Override Start</th>
@@ -353,7 +353,7 @@ const SHARE_URL = 'https://calbox-my.sharepoint.com/:x:/p/drodrigues/IQDYNMiqjj8
 // SCHEDULER CONFIG
 // ─────────────────────────────────────────────────────────────
 const PRODUCTIVE_HRS = 13;          // 8a-12p, 1p-7p, 8p-11p
-const PRINT_DAILY_MSF = 10000;
+const PRINT_DAILY_MSF = 20000;   // Board MSF per day (print goal)
 const CUT_DAILY_MSF = 14000;
 const PRINT_RATE = PRINT_DAILY_MSF / PRODUCTIVE_HRS;  // MSF/hr
 const CUT_RATE = CUT_DAILY_MSF / PRODUCTIVE_HRS;
@@ -579,8 +579,24 @@ function parseExcel(arrayBuf) {
     const fmtDate = v => v instanceof Date ? v : (v ? new Date(v) : null);
     const num = v => (v != null && v !== '' && !isNaN(Number(v))) ? Number(v) : null;
     const rush = get(r, 'Rush');
-    const msf = num(get(r, 'Total MSF.')), qty = num(get(r, 'QTY')), val = num(get(r, 'Order Value $'));
+    const msf = num(get(r, 'MSF.') ?? get(r, 'Total MSF.')), qty = num(get(r, 'QTY')), val = num(get(r, 'Order Value $'));
+    // Est. Print Time (hours, formula column); Board MSF. is in sq ft -> MSF
+    const printHrs = num(get(r, 'Est. Print Time')), boardSqft = num(get(r, 'Board MSF.'));
+    const prodMsf = num(get(r, 'Product MSF.'));
+    // Cut Duration: "6h", "18h 29m", "45m", or a plain number of hours
+    const parseDur = v => {
+      if (v == null || v === '') return null;
+      if (typeof v === 'number') return v > 0 ? v : null;
+      const s = String(v).toLowerCase();
+      const hh = s.match(/(\d+(?:\.\d+)?)\s*h/), mm = s.match(/(\d+(?:\.\d+)?)\s*m/);
+      if (hh || mm) return (hh ? parseFloat(hh[1]) : 0) + (mm ? parseFloat(mm[1]) / 60 : 0);
+      const n = Number(s); return isNaN(n) || n <= 0 ? null : n;
+    };
     return {
+      printHrs: printHrs != null ? printHrs : null,
+      boardMsf: boardSqft != null ? Math.round(boardSqft) : null,
+      productMsf: prodMsf != null ? Math.round(prodMsf) : null,
+      cutHrsSheet: parseDur(get(r, 'Cut Duration')),
       id:       String(get(r, 'Order No.')).replace(/\.0$/, ''),
       company:  get(r, 'Company Name')        || '',
       product:  get(r, 'Product Description') || '',
@@ -673,7 +689,7 @@ function computeSchedule(allOrders) {
   const active = allOrders.filter(o =>
     ACTIVE_STATUSES.has(o.status) &&
     o.status !== 'Cancelled' &&
-    o.msf != null && o.msf > 0
+    o.printHrs != null && o.printHrs > 0
   );
   // Sort: rush first, then due date asc
   active.sort((a, b) => {
@@ -690,8 +706,8 @@ function computeSchedule(allOrders) {
   const result = [];
 
   for (const o of active) {
-    const printHrs = o.msf / PRINT_RATE;
-    const cutHrs = o.msf / CUT_RATE;
+    const printHrs = o.printHrs;
+    const cutHrs = o.cutHrsSheet != null ? o.cutHrsSheet : (o.productMsf || 0) / CUT_RATE;
     const printStart = snapToNextProductive(printEndPrev);
     const printEnd = addProductiveHours(printStart, printHrs);
     const cutEarliest = printEnd > cutEndPrev ? printEnd : cutEndPrev;
@@ -754,7 +770,7 @@ function renderOverrideTable() {
       <td class="ov-order">#${job.id}</td>
       <td class="ov-company">${job.company || '—'}</td>
       <td style="color:#555553; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${job.product || '—'}</td>
-      <td class="ov-msf">${fmtMSF(job.msf)}</td>
+      <td class="ov-msf">${fmtMSF(job.boardMsf)}</td>
       <td class="ov-auto">${fmt(job.printStart)}</td>
       <td class="ov-auto">${fmt(job.printEnd)}</td>
       <td><input class="ov-input ${startVal ? 'overridden' : ''}" type="datetime-local"
@@ -813,7 +829,7 @@ function applyOverrides() {
   // Re-run the scheduler but lock in any overridden Print Start/End,
   // then cascade Cut times and downstream jobs around the locked slots.
   const active = orders.filter(o =>
-    ACTIVE_STATUSES.has(o.status) && o.msf != null && o.msf > 0
+    ACTIVE_STATUSES.has(o.status) && o.printHrs != null && o.printHrs > 0
   ).sort((a, b) => {
     if (a.rush !== b.rush) return a.rush ? -1 : 1;
     const ad = a.due ? a.due.getTime() : Infinity;
@@ -828,8 +844,8 @@ function applyOverrides() {
 
   for (const o of active) {
     const ov = overrides[o.id] || {};
-    const printHrs = o.msf / PRINT_RATE;
-    const cutHrs   = o.msf / CUT_RATE;
+    const printHrs = o.printHrs;
+    const cutHrs   = o.cutHrsSheet != null ? o.cutHrsSheet : (o.productMsf || 0) / CUT_RATE;
 
     // Print window — use override if set, otherwise auto-schedule after previous
     let printStart, printEnd;
@@ -878,11 +894,12 @@ function renderDataCheck() {
   const known = s => ACTIVE_STATUSES.has(s) || /^(completed|cancelled)$/i.test(s);
   const unrecognized = Object.entries(statusCounts).filter(([s]) => !known(s));
   const activeRows = orders.filter(o => ACTIVE_STATUSES.has(o.status));
-  const noMsf = activeRows.filter(o => !(o.msf > 0)).length;
+  const missing = activeRows.filter(o => !(o.printHrs > 0));
+  const noMsf = missing.length;
   const scheduled = scheduledJobs.length;
   const parts = [`Read tab <b>"${esc(parseExcel.lastSheet)}"</b>: <b>${total}</b> orders`,
                  `<b>${scheduled}</b> scheduled on Print/Cut`];
-  if (noMsf) parts.push(`<b>${noMsf}</b> in-progress without a Total MSF value (not scheduled)`);
+  if (noMsf) parts.push(`<b>${noMsf}</b> in-progress without an Est. Print Time, so not scheduled (fill in Board Size in the sheet): ${esc(missing.map(o => '#' + o.id).join(', '))}`);
   if (unrecognized.length) parts.push('Unrecognized statuses: ' + unrecognized.map(([s, n]) => `<b>${esc(s)}</b> ×${n}`).join(', '));
   el.innerHTML = parts.join(' · ');
   el.classList.toggle('warn', scheduled === 0 || noMsf > 0 || unrecognized.length > 0);
@@ -904,13 +921,13 @@ function getFiltered() {
   return scheduledJobs;
 }
 
-function fmtMSF(v) { return v == null ? '—' : Math.round(v).toLocaleString(); }
+function fmtMSF(v) { return v == null ? '—' : v.toLocaleString(undefined,{maximumFractionDigits:1}); }
 
 function renderKPIs() {
   const totalActive = orders.filter(o => ACTIVE_STATUSES.has(o.status)).length;
   const rushCount = scheduledJobs.filter(j => j.rush).length;
   const atRiskCount = scheduledJobs.filter(j => !j.onTime).length;
-  const totalMSF = scheduledJobs.reduce((s, j) => s + (j.msf || 0), 0);
+  const totalMSF = scheduledJobs.reduce((s, j) => s + (j.boardMsf || 0), 0);
   const lastCompletion = scheduledJobs.length ? scheduledJobs[scheduledJobs.length - 1].cutEnd : null;
   const lastStr = lastCompletion ? lastCompletion.toLocaleDateString('en-US', {month:'short', day:'numeric'}) +
                   ' · ' + lastCompletion.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12:false}) : '—';
@@ -919,7 +936,8 @@ function renderKPIs() {
     <div class="stat stat-highlight"><div class="stat-label">Active Orders</div><div class="stat-val">${totalActive}</div></div>
     <div class="stat stat-highlight-rose"><div class="stat-label">Rush</div><div class="stat-val">${rushCount}</div></div>
     <div class="stat stat-highlight-amber"><div class="stat-label">At Risk</div><div class="stat-val">${atRiskCount}</div></div>
-    <div class="stat stat-highlight-green"><div class="stat-label">Total MSF Queued</div><div class="stat-val">${fmtMSF(totalMSF)}</div></div>
+    <div class="stat stat-highlight-green"><div class="stat-label">Board MSF Queued</div><div class="stat-val">${fmtMSF(totalMSF)}</div></div>
+    <div class="stat stat-highlight"><div class="stat-label">Days @ ${PRINT_DAILY_MSF.toLocaleString()}/day</div><div class="stat-val">${(totalMSF / PRINT_DAILY_MSF).toFixed(1)}</div></div>
     <div class="stat stat-highlight-blue"><div class="stat-label">Last Completion</div><div class="stat-val" style="font-size:14px;">${lastStr}</div></div>
   `;
 }
@@ -1019,7 +1037,7 @@ function renderGantt() {
         html += `<div class="job-bar-label">#${job.id}${job.rush ? ' 🚩' : ''}</div>`;
         if (job.company) html += `<div class="job-bar-meta">${job.company}</div>`;
         if (job.product) html += `<div class="job-bar-meta">${job.product}</div>`;
-        if (job.msf)     html += `<div class="job-bar-meta">${fmtMSF(job.msf)} MSF</div>`;
+        if (job.boardMsf) html += `<div class="job-bar-meta">${fmtMSF(job.boardMsf)} Board MSF</div>`;
         html += '</div>';
       });
     }
@@ -1054,7 +1072,7 @@ function renderGantt() {
         if (showLabel) html += `<div class="job-bar-label">#${job.id}</div>`;
         if (showMeta1) html += `<div class="job-bar-meta">${job.company || '—'}</div>`;
         if (showMeta2) html += `<div class="job-bar-meta">${job.product || '—'}</div>`;
-        if (showMeta3) html += `<div class="job-bar-meta">${fmtMSF(job.msf)} MSF</div>`;
+        if (showMeta3) html += `<div class="job-bar-meta">${fmtMSF(job.boardMsf)} Board MSF</div>`;
         html += '</div>';
       });
     }
@@ -1090,7 +1108,8 @@ function showTooltip(e, job) {
       ${job.rush ? '<div class="tooltip-rush">RUSH</div>' : ''}
     </div>
     <div class="tooltip-row"><span class="tooltip-key">Customer</span><span class="tooltip-val">${job.company || '—'}</span></div>
-    <div class="tooltip-row"><span class="tooltip-key">MSF</span><span class="tooltip-val">${fmtMSF(job.msf)}</span></div>
+    <div class="tooltip-row"><span class="tooltip-key">Board MSF</span><span class="tooltip-val">${fmtMSF(job.boardMsf)}</span></div>
+    <div class="tooltip-row"><span class="tooltip-key">Est. print time</span><span class="tooltip-val">${job.printHrs != null ? job.printHrs.toFixed(1) + ' h' : '—'}</span></div>
     <div class="tooltip-row"><span class="tooltip-key">Print</span><span class="tooltip-val">${fmt(job.printStart)} → ${fmt(job.printEnd)}</span></div>
     <div class="tooltip-row"><span class="tooltip-key">Cut</span><span class="tooltip-val">${fmt(job.cutStart)} → ${fmt(job.cutEnd)}</span></div>
     <div class="tooltip-row"><span class="tooltip-key">Due</span><span class="tooltip-val ${job.onTime ? 'due-good' : 'due-risk'}">${dueStr} ${job.onTime ? '✓' : '⚠'}</span></div>
@@ -1144,7 +1163,7 @@ function renderPrintQueue() {
     <div></div>
     <div>Order</div>
     <div>Customer</div>
-    <div style="text-align:right;">MSF</div>
+    <div style="text-align:right;">Board MSF</div>
     <div>Print Window</div>
     <div style="text-align:right;">Due</div>
   </div>`;
@@ -1156,13 +1175,13 @@ function renderPrintQueue() {
       <div class="pq-pos ${isRush ? 'rush' : ''}">${isRush ? '🚩' : idx + 1}</div>
       <div class="pq-id">#${job.id}</div>
       <div class="pq-company" title="${job.company}">${job.company || '—'}</div>
-      <div class="pq-msf">${job.msf != null ? job.msf.toLocaleString(undefined,{maximumFractionDigits:1}) : '—'}</div>
+      <div class="pq-msf">${job.boardMsf != null ? job.boardMsf.toLocaleString(undefined,{maximumFractionDigits:1}) : '—'}</div>
       <div class="pq-time">${fmt(job.printStart)}<br>${fmt(job.printEnd)}</div>
       <div class="pq-due ${cls}">${label}</div>
     </div>`;
   });
 
-  const totalMSF = scheduledJobs.reduce((s, j) => s + (j.msf || 0), 0);
+  const totalMSF = scheduledJobs.reduce((s, j) => s + (j.boardMsf || 0), 0);
   const footer = `<div class="print-queue-row" style="background:#fafaf8; font-weight:700; font-size:11px; color:#888780; border-top: 0.5px solid #e0dfd8;">
     <div></div>
     <div style="color:#1a1a18;">${scheduledJobs.length} jobs</div>
