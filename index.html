@@ -339,7 +339,7 @@ const MSAL_CONFIG = {
   cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false },
 };
 const SCOPES = ['Files.Read', 'User.Read'];
-const SHARE_URL = 'https://calbox-my.sharepoint.com/:x:/p/drodrigues/IQBNDnyLmcKeTbkc5R-KU8NsAQNSmDycoGkYk7YiLitLIe8';
+const SHARE_URL = 'https://calbox-my.sharepoint.com/:x:/p/drodrigues/IQDYNMiqjj8TTKCXTm0muxJ6AbvLDuzONkwpEXBTKUrMC6Y?e=cYnC0S';
 
 // ─────────────────────────────────────────────────────────────
 // SCHEDULER CONFIG
@@ -485,7 +485,7 @@ async function loadFromOneDrive() {
     setLoading(true, 'Parsing orders...');
     const buffer = await resp.arrayBuffer();
     orders = parseExcel(buffer);
-    if (!orders.length) throw new Error('No order rows found in the Excel file.');
+    if (!orders.length) throw new Error(`No order rows found. Sheet read: "${parseExcel.lastSheet}". Columns seen: ${(parseExcel.lastHeaders || []).slice(0, 15).join(', ') || 'none'}. The scheduler expects a column named "Order No."`);
     setLoading(true, 'Computing schedule...');
     scheduledJobs = computeSchedule(orders);
     overrides = {};
@@ -528,6 +528,8 @@ function parseExcel(arrayBuf) {
   const wb = XLSX.read(new Uint8Array(arrayBuf), { type: 'array', cellDates: true });
   const sheetName = wb.SheetNames.includes('Orders') ? 'Orders' : wb.SheetNames[0];
   const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: null });
+  parseExcel.lastSheet = sheetName;
+  parseExcel.lastHeaders = rows.length ? Object.keys(rows[0]) : [];
   return rows.filter(r => r['Order No.'] != null).map(r => {
     const fmtDate = v => v instanceof Date ? v : (v ? new Date(v) : null);
     const rush = r['Rush'];
