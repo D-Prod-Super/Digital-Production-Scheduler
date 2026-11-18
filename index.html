@@ -99,7 +99,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
 /* ─── Gantt ─── */
 .gantt-wrap { padding: 1.25rem 1.5rem; overflow-x: auto; }
-.gantt { background: #fff; border: 0.5px solid #e0dfd8; border-radius: 11px; overflow: hidden; min-width: 1100px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+.gantt { background: #fff; border: 0.5px solid #e0dfd8; border-radius: 11px; width: max-content; min-width: 100%; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
 .gantt-header { display: grid; grid-template-columns: 140px 1fr; border-bottom: 0.5px solid #e0dfd8; background: #fafaf8; }
 .gantt-header-label { padding: 12px 14px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #888780; font-weight: 700; border-right: 0.5px solid #e0dfd8; display: flex; align-items: center; }
 .timeline-axis { position: relative; height: 56px; }
@@ -111,6 +111,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .hour-marker.shift-overlap { background: #fef9e7; }
 .hour-marker.lunch { background: #f0efe9; color: #b8b7b0; }
 
+.gantt-header-label, .work-center-col { position: sticky; left: 0; z-index: 4; }
+.gantt-header-label { background: #fafaf8; }
+html[data-theme="dark"] .gantt-header-label { background: #23262e; }
 .gantt-body { display: grid; grid-template-columns: 140px 1fr; }
 .work-center-col { border-right: 0.5px solid #e0dfd8; background: #fafaf8; }
 .wc-row { padding: 14px 14px; border-bottom: 0.5px solid #e0dfd8; display: flex; flex-direction: column; justify-content: center; gap: 3px; height: 84px; }
@@ -210,12 +213,19 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 }
 
 /* ─── Print queue panel ─── */
-.print-queue-row { display: grid; grid-template-columns: 24px 58px minmax(90px,1.3fr) minmax(70px,1fr) 62px 54px 100px 96px; gap: 8px; min-width: 660px; padding: 9px 16px; align-items: center; font-size: 12px; border-bottom: 0.5px solid #f0efe9; transition: background 0.12s; }
+.print-queue-row { display: grid; grid-template-columns: 24px 58px minmax(90px,1.3fr) minmax(70px,1fr) 62px 54px 100px 96px 46px; gap: 8px; min-width: 720px; padding: 9px 16px; align-items: center; font-size: 12px; border-bottom: 0.5px solid #f0efe9; transition: background 0.12s; }
 #print-queue { overflow-x: auto; }
 .pq-product { color: #555553; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pq-hrs { text-align: right; font-variant-numeric: tabular-nums; color: #555553; }
 .pq-due small { display: block; font-weight: 500; opacity: 0.85; }
 html[data-theme="dark"] .pq-product, html[data-theme="dark"] .pq-hrs { color: #b8b8b2; }
+.print-queue-row.movable { cursor: grab; }
+.pq-move { display: flex; gap: 2px; justify-content: center; }
+.pq-move button { border: 0.5px solid #d0d0ca; background: transparent; color: #888780; border-radius: 3px; font-size: 8px; width: 18px; height: 18px; cursor: pointer; padding: 0; }
+.pq-move button:hover { color: #1a1a18; border-color: #888; }
+.pq-reset { display: none; float: right; margin: -3px 0; background: transparent; border: 0.5px solid #d0d0ca; border-radius: 5px; padding: 3px 9px; font-size: 10px; font-weight: 700; cursor: pointer; color: #888780; text-transform: uppercase; letter-spacing: 0.05em; }
+.pq-reset:hover { color: #c0392b; border-color: #c0392b; }
+html[data-theme="dark"] .pq-move button, html[data-theme="dark"] .pq-reset { border-color: #3a3e49; }
 .print-queue-row:hover { background: #fafaf8; }
 .print-queue-row:last-child { border-bottom: none; }
 .print-queue-row.header { background: #fafaf8; border-bottom: 0.5px solid #e0dfd8; font-size: 10px; font-weight: 700; color: #888780; text-transform: uppercase; letter-spacing: 0.06em; }
@@ -317,6 +327,14 @@ html[data-theme="dark"] .theme-btn { background: #23262e; color: #e6e6e1; border
     <button class="filter-chip" data-filter="rush">Rush Only</button>
     <button class="filter-chip" data-filter="atrisk">At Risk</button>
   </div>
+  <div class="filter-group">
+    <button class="filter-chip" onclick="stepWeek(-1)" title="Previous week">◀</button>
+    <select id="week-select" class="filter-chip" onchange="setWeek(this.value)"><option value="all">All weeks (scroll)</option></select>
+    <button class="filter-chip" onclick="stepWeek(1)" title="Next week">▶</button>
+  </div>
+  <label class="filter-label" style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+    <input type="checkbox" id="planned-toggle" onchange="setShowPlanned(this.checked)"> Show planned schedule
+  </label>
   <label class="filter-label" style="display:flex;align-items:center;gap:6px;cursor:pointer;">
     <input type="checkbox" id="sat-toggle" onchange="toggleSaturday(this.checked)"> Include Saturdays
   </label>
@@ -390,7 +408,7 @@ html[data-theme="dark"] .theme-btn { background: #23262e; color: #e6e6e1; border
       <div class="panel-body" id="stage-list"></div>
     </div>
     <div class="panel">
-      <div class="panel-header">Print Queue · Jobs in Order</div>
+      <div class="panel-header">Print Queue · Jobs in Order <button id="pq-reset" class="pq-reset" onclick="pqResetOrder()">Reset to auto order</button></div>
       <div class="panel-body" id="print-queue"></div>
     </div>
   </div>
@@ -458,6 +476,8 @@ let scheduledJobs = [];
 let msalInstance = null;
 let currentAccount = null;
 let currentView = 'hours';
+let showPlanned = false;
+let ganttWeek = 'all';
 let currentFilter = 'all';
 
 // ─────────────────────────────────────────────────────────────
@@ -565,8 +585,8 @@ async function loadFromOneDrive() {
     orders = parseExcel(buffer);
     if (!orders.length) throw new Error(parseExcel.problem || `Tab "${parseExcel.lastSheet}" was read but contains no order rows.`);
     setLoading(true, 'Computing schedule...');
-    scheduledJobs = computeSchedule(orders);
     overrides = {};
+    scheduledJobs = computeSchedule(orders);
     setLoading(false);
     document.getElementById('summary-bar').style.display = 'flex';
     document.getElementById('controls-bar').style.display = 'flex';
@@ -742,55 +762,88 @@ function toggleTheme() {
 }
 window.addEventListener('DOMContentLoaded', applyThemeLabel);
 
+function setShowPlanned(on) { showPlanned = !!on; renderGantt(); }
+function setWeek(v) { ganttWeek = v; renderGantt(); }
+function stepWeek(dir) {
+  const sel = document.getElementById('week-select');
+  if (!sel) return;
+  const i = sel.selectedIndex + dir;
+  if (i >= 0 && i < sel.options.length) { ganttWeek = sel.options[i].value; renderGantt(); }
+}
+
 function toggleSaturday(on) {
   includeSaturday = !!on;
   if (!orders.length) return;
   applyOverrides();
 }
 
-function computeSchedule(allOrders) {
-  // Filter active jobs with MSF
-  const active = allOrders.filter(o =>
-    ACTIVE_STATUSES.has(o.status) &&
-    o.status !== 'Cancelled' &&
-    o.printHrs != null && o.printHrs > 0
-  );
-  // Sort: rush first, then due date asc
-  active.sort((a, b) => {
-    if (a.rush !== b.rush) return a.rush ? -1 : 1;
-    const ad = a.due ? a.due.getTime() : Infinity;
-    const bd = b.due ? b.due.getTime() : Infinity;
-    return ad - bd;
-  });
+// Orders that still need press or cutter time. Anything past Cutting (stripping, gluing, ...) is never scheduled.
+const SCHEDULABLE = new Set(['New Order','Processing','Pending Approval','Approved','In Queue for Printing','Printing','In Queue for Cutting','Cutting']);
+const PRINT_DONE  = new Set(['In Queue for Cutting','Cutting']);   // already printed: only cutting left
 
-  // Schedule starts now (snapped to next productive moment)
+// Manual print order (array of order ids). Empty = automatic (rush first, then due date).
+let manualOrder = [];
+try { manualOrder = JSON.parse(localStorage.getItem('cb-manual-order') || '[]'); if (!Array.isArray(manualOrder)) manualOrder = []; } catch (e) { manualOrder = []; }
+function saveManualOrder() { try { localStorage.setItem('cb-manual-order', JSON.stringify(manualOrder)); } catch (e) {} }
+
+function autoSort(a, b) {
+  if (a.rush !== b.rush) return a.rush ? -1 : 1;
+  const ad = a.due ? a.due.getTime() : Infinity;
+  const bd = b.due ? b.due.getTime() : Infinity;
+  return ad - bd;
+}
+
+function buildSchedule(allOrders) {
+  const eligible = allOrders.filter(o => SCHEDULABLE.has(o.status) && (PRINT_DONE.has(o.status) || (o.printHrs != null && o.printHrs > 0)));
+  const cutOnly  = eligible.filter(o => PRINT_DONE.has(o.status)).sort((a, b) => (a.status === 'Cutting' ? 0 : 1) - (b.status === 'Cutting' ? 0 : 1) || autoSort(a, b));
+  const onPress  = eligible.filter(o => o.status === 'Printing').sort(autoSort);
+  let rest       = eligible.filter(o => !PRINT_DONE.has(o.status) && o.status !== 'Printing').sort(autoSort);
+  if (manualOrder.length) {
+    const pos = new Map(manualOrder.map((id, i) => [id, i]));
+    rest = [...rest.filter(o => pos.has(o.id)).sort((a, b) => pos.get(a.id) - pos.get(b.id)),
+            ...rest.filter(o => !pos.has(o.id))];
+  }
+  const active = [...cutOnly, ...onPress, ...rest];
+
   const start = snapToNextProductive(new Date());
   let printEndPrev = start;
-  let cutEndPrev = start;
+  let cutEndPrev   = start;
   const result = [];
 
   for (const o of active) {
-    const printHrs = o.printHrs;
-    const cutHrs = o.cutHrsSheet != null ? o.cutHrsSheet : (o.productMsf || 0) / CUT_RATE;
-    const printStart = snapToNextProductive(printEndPrev);
-    const printEnd = addProductiveHours(printStart, printHrs);
+    const ov = overrides[o.id] || {};
+    const printDone = PRINT_DONE.has(o.status);
+    const printHrs = printDone ? 0 : o.printHrs;
+    const cutHrs   = o.cutHrsSheet != null ? o.cutHrsSheet : (o.productMsf || 0) / CUT_RATE;
+
+    let printStart, printEnd;
+    if (printDone) {
+      printStart = printEnd = start;
+    } else if (ov.printStart && ov.printEnd) {
+      printStart = ov.printStart; printEnd = ov.printEnd;
+    } else if (ov.printStart) {
+      printStart = ov.printStart; printEnd = addProductiveHours(printStart, printHrs);
+    } else if (ov.printEnd) {
+      printEnd = ov.printEnd; printStart = snapToNextProductive(printEndPrev);
+    } else {
+      printStart = snapToNextProductive(printEndPrev);
+      printEnd   = addProductiveHours(printStart, printHrs);
+    }
+
     const cutEarliest = printEnd > cutEndPrev ? printEnd : cutEndPrev;
-    const cutStart = snapToNextProductive(cutEarliest);
-    const cutEnd = addProductiveHours(cutStart, cutHrs);
-    printEndPrev = printEnd;
+    const cutStart    = snapToNextProductive(cutEarliest);
+    const cutEnd      = addProductiveHours(cutStart, cutHrs);
+
+    if (!printDone) printEndPrev = printEnd;
     cutEndPrev = cutEnd;
 
     const onTime = o.due ? cutEnd <= new Date(o.due.getFullYear(), o.due.getMonth(), o.due.getDate(), 23, 59) : true;
-    result.push({
-      ...o,
-      printHrs, cutHrs,
-      printStart, printEnd,
-      cutStart, cutEnd,
-      onTime,
-    });
+    result.push({ ...o, printHrs, cutHrs, printDone, printStart, printEnd, cutStart, cutEnd, onTime });
   }
   return result;
 }
+
+function computeSchedule(allOrders) { return buildSchedule(allOrders); }
 
 // ─────────────────────────────────────────────────────────────
 // MANUAL OVERRIDES
@@ -824,7 +877,7 @@ function renderOverrideTable() {
   const tbody = document.getElementById('override-tbody');
   const fmt = d => d ? d.toLocaleString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit', hour12:false }) : '—';
 
-  tbody.innerHTML = scheduledJobs.map(job => {
+  tbody.innerHTML = scheduledJobs.filter(j => !j.printDone).map(job => {
     const ov = overrides[job.id] || {};
     const hasOverride = ov.printStart || ov.printEnd;
     const rowCls = hasOverride ? 'has-override' : '';
@@ -890,56 +943,8 @@ function updateOverrideBadge() {
 }
 
 function applyOverrides() {
-  // Re-run the scheduler but lock in any overridden Print Start/End,
-  // then cascade Cut times and downstream jobs around the locked slots.
-  const active = orders.filter(o =>
-    ACTIVE_STATUSES.has(o.status) && o.printHrs != null && o.printHrs > 0
-  ).sort((a, b) => {
-    if (a.rush !== b.rush) return a.rush ? -1 : 1;
-    const ad = a.due ? a.due.getTime() : Infinity;
-    const bd = b.due ? b.due.getTime() : Infinity;
-    return ad - bd;
-  });
-
-  const start = snapToNextProductive(new Date());
-  let printEndPrev = start;
-  let cutEndPrev   = start;
-  const result = [];
-
-  for (const o of active) {
-    const ov = overrides[o.id] || {};
-    const printHrs = o.printHrs;
-    const cutHrs   = o.cutHrsSheet != null ? o.cutHrsSheet : (o.productMsf || 0) / CUT_RATE;
-
-    // Print window — use override if set, otherwise auto-schedule after previous
-    let printStart, printEnd;
-    if (ov.printStart && ov.printEnd) {
-      printStart = ov.printStart;
-      printEnd   = ov.printEnd;
-    } else if (ov.printStart) {
-      printStart = ov.printStart;
-      printEnd   = addProductiveHours(printStart, printHrs);
-    } else if (ov.printEnd) {
-      printEnd   = ov.printEnd;
-      printStart = snapToNextProductive(printEndPrev);
-    } else {
-      printStart = snapToNextProductive(printEndPrev);
-      printEnd   = addProductiveHours(printStart, printHrs);
-    }
-
-    // Cut window — always starts after print ends AND after previous cut ends
-    const cutEarliest = printEnd > cutEndPrev ? printEnd : cutEndPrev;
-    const cutStart    = snapToNextProductive(cutEarliest);
-    const cutEnd      = addProductiveHours(cutStart, cutHrs);
-
-    printEndPrev = printEnd;
-    cutEndPrev   = cutEnd;
-
-    const onTime = o.due ? cutEnd <= new Date(o.due.getFullYear(), o.due.getMonth(), o.due.getDate(), 23, 59) : true;
-    result.push({ ...o, printHrs, cutHrs, printStart, printEnd, cutStart, cutEnd, onTime });
-  }
-
-  scheduledJobs = result;
+  // Re-run the scheduler with manual time overrides and manual order applied.
+  scheduledJobs = buildSchedule(orders);
   renderGantt();
   renderKPIs();
   renderSidePanels();
@@ -1028,11 +1033,35 @@ function renderGantt() {
     return;
   }
 
-  const allTimes = jobs.flatMap(j => [j.printStart.getTime(), j.cutEnd.getTime()]);
+  // Print row shows only status "Printing", Cut row only "Cutting" (unless "Show planned" is ticked)
+  const printVis = j => showPlanned || j.status === 'Printing';
+  const cutVis   = j => showPlanned || j.status === 'Cutting';
+  const nowT = Date.now();
+  const allTimes = [nowT, nowT + 3 * 86400000];
+  jobs.forEach(j => {
+    if (printVis(j)) allTimes.push(j.printStart.getTime(), j.printEnd.getTime());
+    if (cutVis(j))   allTimes.push(j.cutStart.getTime(), j.cutEnd.getTime());
+  });
   const minT = Math.min(...allTimes);
   const maxT = Math.max(...allTimes);
-  const start = new Date(minT); start.setMinutes(0, 0, 0);
-  const end = new Date(maxT); end.setHours(end.getHours() + 1, 0, 0, 0);
+  let start = new Date(minT); start.setMinutes(0, 0, 0);
+  let end = new Date(maxT); end.setHours(end.getHours() + 1, 0, 0, 0);
+
+  // Week picker
+  const mondayOf = d => { const m = new Date(d.getFullYear(), d.getMonth(), d.getDate()); m.setDate(m.getDate() - ((m.getDay() + 6) % 7)); return m; };
+  const weeks = [];
+  for (let m = mondayOf(start); m < end; m = new Date(m.getFullYear(), m.getMonth(), m.getDate() + 7)) weeks.push(m);
+  const sel = document.getElementById('week-select');
+  if (sel) {
+    if (ganttWeek !== 'all' && !weeks.some(w => String(w.getTime()) === ganttWeek)) ganttWeek = 'all';
+    sel.innerHTML = '<option value="all">All weeks (scroll)</option>' + weeks.map(w =>
+      `<option value="${w.getTime()}"${String(w.getTime()) === ganttWeek ? ' selected' : ''}>Week of ${w.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</option>`).join('');
+    sel.value = ganttWeek;
+  }
+  if (ganttWeek !== 'all') {
+    start = new Date(Number(ganttWeek));
+    end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7);
+  }
 
   let pixelsPerSlot, showHourLabels;
   if (currentView === 'hours') { pixelsPerSlot = 60; showHourLabels = true; }
@@ -1123,6 +1152,7 @@ function renderGantt() {
     // Scheduled bars: Print and Cut bottleneck rows
     if (wc.id === 'print' || wc.id === 'cut') {
       jobs.forEach((job, idx) => {
+        if (wc.id === 'print' ? !printVis(job) : !cutVis(job)) return;
         const jobStart = wc.id === 'print' ? job.printStart : job.cutStart;
         const jobEnd   = wc.id === 'print' ? job.printEnd   : job.cutEnd;
         const color = PALETTE[idx % PALETTE.length];
@@ -1236,8 +1266,40 @@ function dueInfo(due) {
 
 
 
+function pqMovableIds() {
+  return scheduledJobs.filter(j => !j.printDone && j.status !== 'Printing').map(j => j.id);
+}
+function pqSetOrder(ids) {
+  manualOrder = ids;
+  saveManualOrder();
+  applyOverrides();
+}
+function pqMove(id, dir) {
+  const ids = pqMovableIds();
+  const i = ids.indexOf(id), j = i + dir;
+  if (i < 0 || j < 0 || j >= ids.length) return;
+  [ids[i], ids[j]] = [ids[j], ids[i]];
+  pqSetOrder(ids);
+}
+function pqDragStart(e, id) { e.dataTransfer.setData('text/plain', id); e.dataTransfer.effectAllowed = 'move'; }
+function pqDrop(e, targetId) {
+  e.preventDefault();
+  const srcId = e.dataTransfer.getData('text/plain');
+  const ids = pqMovableIds();
+  const si = ids.indexOf(srcId), ti = ids.indexOf(targetId);
+  if (si < 0 || ti < 0 || si === ti) return;
+  ids.splice(si, 1);
+  ids.splice(ti, 0, srcId);
+  pqSetOrder(ids);
+}
+function pqResetOrder() { pqSetOrder([]); }
+
 function renderPrintQueue() {
   const fmt = d => d.toLocaleString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit', hour12: false });
+  const queue = scheduledJobs.filter(j => !j.printDone);   // jobs still to print
+  const resetBtn = document.getElementById('pq-reset');
+  if (resetBtn) resetBtn.style.display = manualOrder.length ? 'inline-block' : 'none';
+
   const header = `<div class="print-queue-row header">
     <div></div>
     <div>Order</div>
@@ -1247,11 +1309,13 @@ function renderPrintQueue() {
     <div style="text-align:right;">Est. Print</div>
     <div>Print Window</div>
     <div style="text-align:right;">Due Date</div>
+    <div style="text-align:center;">Move</div>
   </div>`;
 
-  const rows = scheduledJobs.map((job, idx) => {
+  const rows = queue.map((job, idx) => {
     const { cls } = dueInfo(job.due);
     const isRush = job.rush;
+    const movable = job.status !== 'Printing';
     let dueDate = 'No due date', daysLeft = '';
     if (job.due) {
       const t0 = new Date(); t0.setHours(0,0,0,0);
@@ -1260,7 +1324,8 @@ function renderPrintQueue() {
       dueDate = d0.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       daysLeft = diff < 0 ? `${Math.abs(diff)}d overdue` : diff === 0 ? 'due today' : `${diff}d left`;
     }
-    return `<div class="print-queue-row">
+    const drag = movable ? ` draggable="true" ondragstart="pqDragStart(event,'${job.id}')" ondragover="event.preventDefault()" ondrop="pqDrop(event,'${job.id}')"` : '';
+    return `<div class="print-queue-row${movable ? ' movable' : ''}"${drag}>
       <div class="pq-pos ${isRush ? 'rush' : ''}">${isRush ? '🚩' : idx + 1}</div>
       <div class="pq-id">#${job.id}</div>
       <div class="pq-product" title="${job.product}">${job.product || '—'}</div>
@@ -1269,23 +1334,25 @@ function renderPrintQueue() {
       <div class="pq-hrs">${job.printHrs != null ? job.printHrs.toFixed(1) + ' h' : '—'}</div>
       <div class="pq-time">${fmt(job.printStart)}<br>${fmt(job.printEnd)}</div>
       <div class="pq-due ${cls}">${dueDate}<small>${daysLeft}</small></div>
+      <div class="pq-move">${movable ? `<button onclick="pqMove('${job.id}',-1)" title="Move up">▲</button><button onclick="pqMove('${job.id}',1)" title="Move down">▼</button>` : '<span title="On the press">🔒</span>'}</div>
     </div>`;
   });
 
-  const totalMSF = scheduledJobs.reduce((s, j) => s + (j.boardMsf || 0), 0);
+  const totalMSF = queue.reduce((s, j) => s + (j.boardMsf || 0), 0);
   const footer = `<div class="print-queue-row" style="background:#fafaf8; font-weight:700; font-size:11px; color:#888780; border-top: 0.5px solid #e0dfd8;">
     <div></div>
-    <div style="color:#1a1a18;">${scheduledJobs.length} jobs</div>
+    <div style="color:#1a1a18;">${queue.length} jobs</div>
     <div></div>
     <div></div>
     <div style="text-align:right; color:#0c3060;">${totalMSF.toLocaleString(undefined,{maximumFractionDigits:0})}</div>
-    <div style="text-align:right;">${scheduledJobs.reduce((s, j) => s + (j.printHrs || 0), 0).toFixed(1)} h</div>
+    <div style="text-align:right;">${queue.reduce((s, j) => s + (j.printHrs || 0), 0).toFixed(1)} h</div>
+    <div></div>
     <div></div>
     <div></div>
   </div>`;
 
   document.getElementById('print-queue').innerHTML =
-    scheduledJobs.length === 0
+    queue.length === 0
       ? '<div style="padding:24px; text-align:center; color:#aaa; font-size:12px;">No jobs scheduled</div>'
       : header + rows.join('') + footer;
 }
