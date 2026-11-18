@@ -22,6 +22,11 @@ if (typeof msal === 'undefined') {
   document.write('<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"><\/script>');
 }
 </script>
+<script>
+(function(){ var t=null; try { t = localStorage.getItem('cb-theme'); } catch(e) {}
+  if (!t) t = (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', t); })();
+</script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; color: #1a1a18; min-height: 100vh; }
@@ -67,6 +72,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .stat.stat-highlight-amber .stat-label { color: #f0c873; }
 .stat.stat-highlight-amber .stat-val { color: #fff; }
 .stat-label { font-size: 10px; color: #888780; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.04em; }
+.stat-sub { font-size: 10px; color: #7ab3e8; margin-top: 1px; }
 .stat-val { font-size: 19px; font-weight: 600; color: #1a1a18; }
 
 /* ─── Sign-in / loading ─── */
@@ -142,7 +148,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .tooltip .due-risk { color: #f0c873; }
 
 /* ─── Side panels ─── */
-.panels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 0 1.5rem 1.5rem; }
+.panels { display: grid; grid-template-columns: minmax(280px,2fr) 3fr; gap: 16px; padding: 0 1.5rem 1.5rem; }
 .panel { background: #fff; border: 0.5px solid #e0dfd8; border-radius: 11px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
 .panel-header { padding: 12px 16px; border-bottom: 0.5px solid #e0dfd8; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: #888780; text-transform: uppercase; background: #fafaf8; }
 .panel-body { padding: 4px 0; }
@@ -204,7 +210,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 }
 
 /* ─── Print queue panel ─── */
-.print-queue-row { display: grid; grid-template-columns: 28px 70px 1fr 80px 120px 80px; gap: 10px; padding: 9px 16px; align-items: center; font-size: 12px; border-bottom: 0.5px solid #f0efe9; transition: background 0.12s; }
+.print-queue-row { display: grid; grid-template-columns: 24px 58px minmax(90px,1.3fr) minmax(70px,1fr) 62px 54px 100px 96px; gap: 8px; min-width: 660px; padding: 9px 16px; align-items: center; font-size: 12px; border-bottom: 0.5px solid #f0efe9; transition: background 0.12s; }
+#print-queue { overflow-x: auto; }
+.pq-product { color: #555553; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pq-hrs { text-align: right; font-variant-numeric: tabular-nums; color: #555553; }
+.pq-due small { display: block; font-weight: 500; opacity: 0.85; }
+html[data-theme="dark"] .pq-product, html[data-theme="dark"] .pq-hrs { color: #b8b8b2; }
 .print-queue-row:hover { background: #fafaf8; }
 .print-queue-row:last-child { border-bottom: none; }
 .print-queue-row.header { background: #fafaf8; border-bottom: 0.5px solid #e0dfd8; font-size: 10px; font-weight: 700; color: #888780; text-transform: uppercase; letter-spacing: 0.06em; }
@@ -215,6 +226,59 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .pq-msf { font-weight: 700; color: #0c3060; text-align: right; font-variant-numeric: tabular-nums; }
 .pq-time { font-size: 10px; color: #888780; font-variant-numeric: tabular-nums; line-height: 1.5; }
 .pq-due { font-size: 11px; font-weight: 600; text-align: right; }
+
+/* ─── Dark mode ─── */
+html[data-theme="dark"] body { background: #14151a; color: #e6e6e1; }
+html[data-theme="dark"] .top-bar, html[data-theme="dark"] .summary-bar, html[data-theme="dark"] .controls-bar,
+html[data-theme="dark"] .gantt, html[data-theme="dark"] .panel, html[data-theme="dark"] .override-panel,
+html[data-theme="dark"] .footer { background: #1d1f26; border-color: #2e313a; }
+html[data-theme="dark"] .gantt-header, html[data-theme="dark"] .day-marker, html[data-theme="dark"] .work-center-col,
+html[data-theme="dark"] .panel-header, html[data-theme="dark"] .override-header, html[data-theme="dark"] .override-table th,
+html[data-theme="dark"] .print-queue-row.header, html[data-theme="dark"] .view-tabs, html[data-theme="dark"] .filter-chip,
+html[data-theme="dark"] .user-pill, html[data-theme="dark"] [style*="background:#fafaf8"] { background: #23262e !important; border-color: #2e313a; }
+html[data-theme="dark"] .gantt-header, html[data-theme="dark"] .gantt-header-label, html[data-theme="dark"] .timeline-axis-row,
+html[data-theme="dark"] .day-marker, html[data-theme="dark"] .work-center-col, html[data-theme="dark"] .wc-row,
+html[data-theme="dark"] .timeline-row, html[data-theme="dark"] .panel-header, html[data-theme="dark"] .override-header,
+html[data-theme="dark"] .override-table th { border-color: #2e313a; }
+html[data-theme="dark"] .brand h1, html[data-theme="dark"] .day-marker, html[data-theme="dark"] .wc-name, html[data-theme="dark"] .list-name,
+html[data-theme="dark"] .pq-id, html[data-theme="dark"] .pq-company, html[data-theme="dark"] .ov-order, html[data-theme="dark"] .view-tab:hover,
+html[data-theme="dark"] .filter-chip:hover, html[data-theme="dark"] .center-screen h2 { color: #e6e6e1; }
+html[data-theme="dark"] .brand-icon { background: #e6e6e1; }
+html[data-theme="dark"] .brand-icon svg { fill: #14151a; }
+html[data-theme="dark"] .btn { background: #23262e; color: #e6e6e1; border-color: #3a3e49; }
+html[data-theme="dark"] .btn:hover { background: #2c303a; }
+html[data-theme="dark"] .btn-primary { background: #0078d4; border-color: #0078d4; color: #fff; }
+html[data-theme="dark"] .stat { background: #23262e; }
+html[data-theme="dark"] .stat.stat-highlight { background: #2f323c; }
+html[data-theme="dark"] .stat-val { color: #e6e6e1; }
+html[data-theme="dark"] .filter-chip { color: #b8b8b2; }
+html[data-theme="dark"] .view-tab.active, html[data-theme="dark"] .filter-chip.active { background: #e6e6e1 !important; color: #14151a !important; border-color: #e6e6e1; }
+html[data-theme="dark"] .hour-marker { border-color: #272a32; }
+html[data-theme="dark"] .hour-marker.lunch, html[data-theme="dark"] .timeline-cell.lunch { background: #2a2d36; color: #5d606b; }
+html[data-theme="dark"] .hour-marker.shift-overlap, html[data-theme="dark"] .timeline-cell.shift-overlap { background: #34301d; }
+html[data-theme="dark"] .timeline-cell { border-color: #23262e; }
+html[data-theme="dark"] .wc-row.bottleneck .wc-name, html[data-theme="dark"] .ov-msf, html[data-theme="dark"] .pq-msf { color: #7ab3e8; }
+html[data-theme="dark"] .list-row, html[data-theme="dark"] .print-queue-row, html[data-theme="dark"] .override-table td { border-color: #2a2d36; }
+html[data-theme="dark"] .list-row:hover, html[data-theme="dark"] .print-queue-row:hover, html[data-theme="dark"] .override-table tr:hover td,
+html[data-theme="dark"] .override-header:hover { background: #262932; }
+html[data-theme="dark"] .list-bar-bg { background: #2a2d36; }
+html[data-theme="dark"] .pq-pos { color: #3a3e49; }
+html[data-theme="dark"] .ov-company, html[data-theme="dark"] .override-table td[style*="#555553"] { color: #b8b8b2 !important; }
+html[data-theme="dark"] .override-table tr.has-override td, html[data-theme="dark"] .ov-input.overridden { background: #3a3220; }
+html[data-theme="dark"] .ov-input { background: #23262e; color: #e6e6e1; border-color: #3a3e49; }
+html[data-theme="dark"] .override-apply { background: #e6e6e1; color: #14151a; }
+html[data-theme="dark"] .override-apply:hover { background: #fff; }
+html[data-theme="dark"] .override-clear { border-color: #3a3e49; }
+html[data-theme="dark"] .data-check { background: #17283a; color: #a9cdf2; border-color: #1f3a55; }
+html[data-theme="dark"] .data-check.warn { background: #382d12; color: #f0c873; border-color: #54431a; }
+html[data-theme="dark"] .center-screen p { color: #9a9a94; }
+html[data-theme="dark"] .center-screen .err { background: #3a1d19; border-color: #5c2a24; color: #f1a79f; }
+html[data-theme="dark"] .spinner { border-color: #2e313a; border-top-color: #0078d4; }
+html[data-theme="dark"] .footer { color: #6d7079; }
+html[data-theme="dark"] .gantt { box-shadow: none; }
+html[data-theme="dark"] .tooltip { background: #0c0d10; border: 0.5px solid #3a3e49; }
+html[data-theme="dark"] .theme-btn { background: #23262e; color: #e6e6e1; border-color: #3a3e49; }
+.theme-btn { height: 32px; padding: 0 12px; border-radius: 7px; border: 0.5px solid #ccc; background: #fff; color: #1a1a18; font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; }
 </style>
 </head>
 <body>
@@ -225,6 +289,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
     </div>
     <div><h1>Calbox <span>/ Production Scheduler · Live</span></h1></div>
+  </div>
+  <div class="top-right" style="margin-left:auto;">
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙 Dark</button>
   </div>
   <div class="top-right" id="top-right-controls" style="display:none;">
     <span class="last-refresh" id="last-refresh"></span>
@@ -250,6 +317,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <button class="filter-chip" data-filter="rush">Rush Only</button>
     <button class="filter-chip" data-filter="atrisk">At Risk</button>
   </div>
+  <label class="filter-label" style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+    <input type="checkbox" id="sat-toggle" onchange="toggleSaturday(this.checked)"> Include Saturdays
+  </label>
 </div>
 
 <div class="data-check" id="data-check" style="display:none;"></div>
@@ -352,28 +422,28 @@ const SHARE_URL = 'https://calbox-my.sharepoint.com/:x:/p/drodrigues/IQDYNMiqjj8
 // ─────────────────────────────────────────────────────────────
 // SCHEDULER CONFIG
 // ─────────────────────────────────────────────────────────────
-const PRODUCTIVE_HRS = 13;          // 8a-12p, 1p-7p, 8p-11p
+const PRODUCTIVE_HRS = 19.5;        // Mon-Fri machine hours/day: 4:00-8:00, 8:30-18:00, 18:30-00:30
 const PRINT_DAILY_MSF = 20000;   // Board MSF per day (print goal)
 const CUT_DAILY_MSF = 14000;
 const PRINT_RATE = PRINT_DAILY_MSF / PRODUCTIVE_HRS;  // MSF/hr
 const CUT_RATE = CUT_DAILY_MSF / PRODUCTIVE_HRS;
 
-// Productive blocks per day (machine running, not at lunch)
-const SHIFT_BLOCKS = [
-  { startH: 8,  startM: 0,  endH: 12, endM: 0  },
-  { startH: 13, startM: 0,  endH: 15, endM: 0  },
-  { startH: 15, startM: 0,  endH: 17, endM: 0  },  // overlap
-  { startH: 17, startM: 0,  endH: 19, endM: 0  },
-  { startH: 20, startM: 0,  endH: 23, endM: 0  },
-];
+// Machine run-time blocks per day (hours since midnight; >24 = past midnight).
+// Mon-Fri: 1st shift 4:00-14:30 (lunch 8:00-8:30), 2nd shift 14:00-00:30 (lunch 18:00-18:30)
+//   -> machine covered 4:00-8:00, 8:30-18:00, 18:30-24:30
+// Sat (optional): 1st 4:30-10:30 (lunch 7:30-8:00), 2nd 10:30-16:30 (lunch 14:30-15:00)
+//   -> machine covered 4:30-7:30, 8:00-14:30, 15:00-16:30
+const WEEKDAY_BLOCKS = [[4, 8], [8.5, 18], [18.5, 24.5]];
+const SATURDAY_BLOCKS = [[4.5, 7.5], [8, 14.5], [15, 16.5]];
+let includeSaturday = false;
 
 const PALETTE = ['#FBB6CE','#FED7A8','#FEF3C7','#BBF7D0','#BFDBFE','#DDD6FE','#FECACA','#FDE68A','#A7F3D0','#C7D2FE','#F9A8D4','#FCD34D','#BEF264','#67E8F9'];
 
 const WORK_CENTERS = [
   { id: 'queue_print',  name: 'In Queue for Printing', meta: 'Waiting for press',         bottleneck: false, queueFor: null },
-  { id: 'print',        name: 'Printing',              meta: 'Bottleneck · 10K MSF/day', bottleneck: true,  queueFor: null },
+  { id: 'print',        name: 'Printing',              meta: 'Bottleneck · 20K Board MSF/day', bottleneck: true,  queueFor: null },
   { id: 'queue_cut',    name: 'In Queue for Cutting',  meta: 'Waiting for cutter',        bottleneck: false, queueFor: null },
-  { id: 'cut',          name: 'Cutting',               meta: 'Bottleneck · 14K MSF/day', bottleneck: true,  queueFor: null },
+  { id: 'cut',          name: 'Cutting',               meta: 'Bottleneck · 14K Product MSF/day', bottleneck: true,  queueFor: null },
   { id: 'finishing',    name: 'Finishing',             meta: 'Stripping · Gluing',        bottleneck: false, queueFor: null },
 ];
 
@@ -616,72 +686,66 @@ function parseExcel(arrayBuf) {
 // ─────────────────────────────────────────────────────────────
 // SHIFT-AWARE SCHEDULER (ported from Python)
 // ─────────────────────────────────────────────────────────────
-function isWorkday(date) {
-  const d = date.getDay();
-  return d >= 1 && d <= 5;
+function blocksFor(day) {
+  const dow = day.getDay();
+  const list = (dow >= 1 && dow <= 5) ? WEEKDAY_BLOCKS : (dow === 6 && includeSaturday ? SATURDAY_BLOCKS : []);
+  return list.map(([s, e]) => [
+    new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, Math.round(s * 60)),
+    new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, Math.round(e * 60)),
+  ]);
 }
 
-function nextWorkday(date) {
-  const d = new Date(date);
-  d.setDate(d.getDate() + 1);
-  while (!isWorkday(d)) d.setDate(d.getDate() + 1);
-  return d;
+// First working interval that ends after `cur` (looks at the previous day too, for past-midnight shifts)
+function nextInterval(cur) {
+  for (let off = -1; off < 400; off++) {
+    const day = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + off);
+    for (const [s, e] of blocksFor(day)) if (e > cur) return [s, e];
+  }
+  return [cur, cur];
+}
+
+function isWorkingMoment(dt) {
+  const [s, e] = nextInterval(dt);
+  return s <= dt && dt < e;
 }
 
 function snapToNextProductive(dt) {
-  let cur = new Date(dt);
-  for (let i = 0; i < 1000; i++) {
-    if (!isWorkday(cur)) {
-      const nd = nextWorkday(cur);
-      cur = new Date(nd.getFullYear(), nd.getMonth(), nd.getDate(), 8, 0, 0, 0);
-      continue;
-    }
-    for (const blk of SHIFT_BLOCKS) {
-      const bs = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate(), blk.startH, blk.startM);
-      const be = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate(), blk.endH, blk.endM);
-      if (cur < bs) return bs;
-      if (cur < be) return cur;
-    }
-    // Past last block
-    const nd = nextWorkday(cur);
-    cur = new Date(nd.getFullYear(), nd.getMonth(), nd.getDate(), 8, 0, 0, 0);
-  }
-  return cur;
+  const cur = new Date(dt);
+  const [s] = nextInterval(cur);
+  return s > cur ? s : cur;
 }
 
 function addProductiveHours(startDt, hoursNeeded) {
   if (hoursNeeded <= 0) return new Date(startDt);
   let cur = new Date(startDt);
   let remaining = hoursNeeded;
-  for (let iter = 0; iter < 10000; iter++) {
-    if (remaining <= 0) return cur;
-    if (!isWorkday(cur)) {
-      const nd = nextWorkday(cur);
-      cur = new Date(nd.getFullYear(), nd.getMonth(), nd.getDate(), 8, 0);
-      continue;
-    }
-    let placed = false;
-    for (const blk of SHIFT_BLOCKS) {
-      const bs = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate(), blk.startH, blk.startM);
-      const be = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate(), blk.endH, blk.endM);
-      if (cur >= be) continue;
-      if (cur < bs) cur = new Date(bs);
-      const availMs = be - cur;
-      const availHrs = availMs / 3600000;
-      if (remaining <= availHrs) {
-        return new Date(cur.getTime() + remaining * 3600000);
-      } else {
-        remaining -= availHrs;
-        cur = new Date(be);
-        placed = true;
-      }
-    }
-    if (!placed) {
-      const nd = nextWorkday(cur);
-      cur = new Date(nd.getFullYear(), nd.getMonth(), nd.getDate(), 8, 0);
-    }
+  for (let iter = 0; iter < 20000; iter++) {
+    const [s, e] = nextInterval(cur);
+    const from = s > cur ? s : cur;
+    const availHrs = (e - from) / 3600000;
+    if (remaining <= availHrs) return new Date(from.getTime() + remaining * 3600000);
+    remaining -= availHrs;
+    cur = new Date(e);
   }
   return cur;
+}
+
+function applyThemeLabel() {
+  const b = document.getElementById('theme-btn');
+  if (b) b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️ Light' : '🌙 Dark';
+}
+function toggleTheme() {
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  try { localStorage.setItem('cb-theme', next); } catch (e) {}
+  applyThemeLabel();
+}
+window.addEventListener('DOMContentLoaded', applyThemeLabel);
+
+function toggleSaturday(on) {
+  includeSaturday = !!on;
+  if (!orders.length) return;
+  applyOverrides();
 }
 
 function computeSchedule(allOrders) {
@@ -928,18 +992,32 @@ function renderKPIs() {
   const rushCount = scheduledJobs.filter(j => j.rush).length;
   const atRiskCount = scheduledJobs.filter(j => !j.onTime).length;
   const totalMSF = scheduledJobs.reduce((s, j) => s + (j.boardMsf || 0), 0);
-  const lastCompletion = scheduledJobs.length ? scheduledJobs[scheduledJobs.length - 1].cutEnd : null;
+  const lastCompletion = scheduledJobs.length ? new Date(Math.max(...scheduledJobs.map(j => j.cutEnd.getTime()))) : null;
   const lastStr = lastCompletion ? lastCompletion.toLocaleDateString('en-US', {month:'short', day:'numeric'}) +
                   ' · ' + lastCompletion.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12:false}) : '—';
 
+  // Printing = at the press (queue + printing); Cutting = at the cutter (queue + cutting)
+  const printOrders = orders.filter(o => o.status === 'Printing' || o.status === 'In Queue for Printing');
+  const cutOrders   = orders.filter(o => o.status === 'Cutting' || o.status === 'In Queue for Cutting');
+  const sumBoard = list => list.reduce((s, o) => s + (o.boardMsf || 0), 0);
+  const printMSF = sumBoard(printOrders), cutMSF = sumBoard(cutOrders);
+  const daysBooked = printMSF / PRINT_DAILY_MSF;
+  let turnaround = '—', turnSub = '';
+  if (lastCompletion) {
+    const ms = Math.max(0, lastCompletion - new Date());
+    const totalH = Math.floor(ms / 3600000);
+    turnaround = `${Math.floor(totalH / 24)}d ${totalH % 24}h`;
+    turnSub = lastStr;
+  }
   document.getElementById('summary-bar').innerHTML = `
-    <div class="stat stat-highlight"><div class="stat-label">Active Orders</div><div class="stat-val">${totalActive}</div></div>
-    <div class="stat stat-highlight-rose"><div class="stat-label">Rush</div><div class="stat-val">${rushCount}</div></div>
-    <div class="stat stat-highlight-amber"><div class="stat-label">At Risk</div><div class="stat-val">${atRiskCount}</div></div>
-    <div class="stat stat-highlight-green"><div class="stat-label">Board MSF Queued</div><div class="stat-val">${fmtMSF(totalMSF)}</div></div>
-    <div class="stat stat-highlight"><div class="stat-label">Days @ ${PRINT_DAILY_MSF.toLocaleString()}/day</div><div class="stat-val">${(totalMSF / PRINT_DAILY_MSF).toFixed(1)}</div></div>
-    <div class="stat stat-highlight-blue"><div class="stat-label">Last Completion</div><div class="stat-val" style="font-size:14px;">${lastStr}</div></div>
+    <div class="stat stat-highlight"><div class="stat-label">Printing Orders</div><div class="stat-val">${printOrders.length}</div></div>
+    <div class="stat stat-highlight-green"><div class="stat-label">Board MSF Queued</div><div class="stat-val">${fmtMSF(printMSF)}</div></div>
+    <div class="stat stat-highlight-rose"><div class="stat-label">Cutting Orders</div><div class="stat-val">${cutOrders.length}</div></div>
+    <div class="stat stat-highlight-amber"><div class="stat-label">Board MSF to Cut</div><div class="stat-val">${fmtMSF(cutMSF)}</div></div>
+    <div class="stat stat-highlight"><div class="stat-label">Days Booked @ ${PRINT_DAILY_MSF.toLocaleString()}/day</div><div class="stat-val">${daysBooked.toFixed(1)}</div></div>
+    <div class="stat stat-highlight-blue"><div class="stat-label">Turnaround Time</div><div class="stat-val">${turnaround}</div><div class="stat-sub">until last order completes${turnSub ? ' · ' + turnSub : ''}</div></div>
   `;
+
 }
 
 function renderGantt() {
@@ -961,13 +1039,13 @@ function renderGantt() {
   else if (currentView === 'days') { pixelsPerSlot = 22; showHourLabels = false; }
   else { pixelsPerSlot = 8; showHourLabels = false; }
 
-  // Build slots (working hours: Mon-Fri 8am-11pm)
+  // Build slots (only hours the machines can run)
   const slots = [];
   let cursor = new Date(start);
   while (cursor < end) {
-    if (cursor.getDay() >= 1 && cursor.getDay() <= 5 && cursor.getHours() >= 8 && cursor.getHours() < 23) {
-      slots.push(new Date(cursor));
-    }
+    const slotEnd = new Date(cursor.getTime() + 3600000);
+    const [bs, be] = nextInterval(cursor);
+    if (bs < slotEnd && be > cursor) slots.push(new Date(cursor));
     cursor.setHours(cursor.getHours() + 1);
   }
   if (!slots.length) { ganttEl.innerHTML = '<div style="padding:60px; text-align:center;">No working hours in horizon</div>'; return; }
@@ -979,15 +1057,16 @@ function renderGantt() {
   // Day row
   html += '<div class="timeline-axis-row">';
   let dayStart = 0;
-  let currentDay = slots[0].toDateString();
+  const dayKey = s => { const d = new Date(s); if (d.getHours() < 3) d.setDate(d.getDate() - 1); return d.toDateString(); };
+  let currentDay = dayKey(slots[0]);
   for (let i = 0; i <= slots.length; i++) {
-    if (i === slots.length || slots[i].toDateString() !== currentDay) {
+    if (i === slots.length || dayKey(slots[i]) !== currentDay) {
       const width = (i - dayStart) * pixelsPerSlot;
-      const d = slots[dayStart];
+      const d = new Date(slots[dayStart]); if (d.getHours() < 3) d.setDate(d.getDate() - 1);
       const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
       const dateNum = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       html += `<div class="day-marker" style="width:${width}px;">${dayName}<span class="date-num">${dateNum}</span></div>`;
-      if (i < slots.length) { currentDay = slots[i].toDateString(); dayStart = i; }
+      if (i < slots.length) { currentDay = dayKey(slots[i]); dayStart = i; }
     }
   }
   html += '</div>';
@@ -997,8 +1076,8 @@ function renderGantt() {
   for (const slot of slots) {
     const h = slot.getHours();
     let cls = 'hour-marker';
-    if (h === 12 || h === 19) cls += ' lunch';
-    else if (h >= 15 && h < 17) cls += ' shift-overlap';
+    if (h === 8 || h === 18) cls += ' lunch';
+    else if (h === 14) cls += ' shift-overlap';
     const label = showHourLabels ? String(h).padStart(2, '0') : '';
     html += `<div class="${cls}" style="width:${pixelsPerSlot}px;">${label}</div>`;
   }
@@ -1019,8 +1098,8 @@ function renderGantt() {
     for (const slot of slots) {
       const h = slot.getHours();
       let cls = 'timeline-cell';
-      if (h === 12 || h === 19) cls += ' lunch';
-      else if (h >= 15 && h < 17) cls += ' shift-overlap';
+      if (h === 8 || h === 18) cls += ' lunch';
+      else if (h === 14) cls += ' shift-overlap';
       html += `<div class="${cls}" style="width:${pixelsPerSlot}px;"></div>`;
     }
     // Queue rows: show order chips as small labeled blocks at fixed positions
@@ -1162,22 +1241,34 @@ function renderPrintQueue() {
   const header = `<div class="print-queue-row header">
     <div></div>
     <div>Order</div>
+    <div>Product</div>
     <div>Customer</div>
     <div style="text-align:right;">Board MSF</div>
+    <div style="text-align:right;">Est. Print</div>
     <div>Print Window</div>
-    <div style="text-align:right;">Due</div>
+    <div style="text-align:right;">Due Date</div>
   </div>`;
 
   const rows = scheduledJobs.map((job, idx) => {
-    const { cls, label } = dueInfo(job.due);
+    const { cls } = dueInfo(job.due);
     const isRush = job.rush;
+    let dueDate = 'No due date', daysLeft = '';
+    if (job.due) {
+      const t0 = new Date(); t0.setHours(0,0,0,0);
+      const d0 = new Date(job.due); d0.setHours(0,0,0,0);
+      const diff = Math.round((d0 - t0) / 86400000);
+      dueDate = d0.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      daysLeft = diff < 0 ? `${Math.abs(diff)}d overdue` : diff === 0 ? 'due today' : `${diff}d left`;
+    }
     return `<div class="print-queue-row">
       <div class="pq-pos ${isRush ? 'rush' : ''}">${isRush ? '🚩' : idx + 1}</div>
       <div class="pq-id">#${job.id}</div>
+      <div class="pq-product" title="${job.product}">${job.product || '—'}</div>
       <div class="pq-company" title="${job.company}">${job.company || '—'}</div>
       <div class="pq-msf">${job.boardMsf != null ? job.boardMsf.toLocaleString(undefined,{maximumFractionDigits:1}) : '—'}</div>
+      <div class="pq-hrs">${job.printHrs != null ? job.printHrs.toFixed(1) + ' h' : '—'}</div>
       <div class="pq-time">${fmt(job.printStart)}<br>${fmt(job.printEnd)}</div>
-      <div class="pq-due ${cls}">${label}</div>
+      <div class="pq-due ${cls}">${dueDate}<small>${daysLeft}</small></div>
     </div>`;
   });
 
@@ -1186,7 +1277,9 @@ function renderPrintQueue() {
     <div></div>
     <div style="color:#1a1a18;">${scheduledJobs.length} jobs</div>
     <div></div>
+    <div></div>
     <div style="text-align:right; color:#0c3060;">${totalMSF.toLocaleString(undefined,{maximumFractionDigits:0})}</div>
+    <div style="text-align:right;">${scheduledJobs.reduce((s, j) => s + (j.printHrs || 0), 0).toFixed(1)} h</div>
     <div></div>
     <div></div>
   </div>`;
